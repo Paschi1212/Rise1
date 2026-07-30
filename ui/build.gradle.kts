@@ -1,12 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 // :ui ist zugleich das Anwendungsmodul — siehe Modules.md, "Warum kein :app".
-// Bewusst OHNE externe Abhängigkeiten (kein AppCompat, kein Compose): Solange
-// es nichts anzuzeigen gibt, ist jede Bibliothek nur ein Versionsrisiko beim
-// ersten Build. Kommt mit der Tischansicht in E10.
+//
+// D-004 (2026-07-30): Jetpack Compose ist die UI-Grundlage. Bis dahin war dieses
+// Modul bewusst ohne jede UI-Bibliothek gebaut — solange nichts anzuzeigen war,
+// wäre jede nur ein Versionsrisiko gewesen. Mit T-017 gibt es etwas anzuzeigen.
+// Kein AppCompat: Compose braucht es nicht, ComponentActivity genügt.
 
 android {
     namespace = "de.myhornets.rise1"
@@ -27,6 +30,7 @@ android {
         // Für BuildConfig.VERSION_NAME in der Statusansicht. Ab AGP 8 muss das
         // ausdrücklich eingeschaltet werden.
         buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -52,6 +56,15 @@ kotlin {
 }
 
 dependencies {
+    // Die BOM legt die Versionen aller Compose-Artefakte fest — siehe D-004.
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.androidx.activity.compose)
+    debugImplementation(libs.compose.ui.tooling)
+
     implementation(project(":core"))
     implementation(project(":projection"))
     implementation(project(":catalog"))

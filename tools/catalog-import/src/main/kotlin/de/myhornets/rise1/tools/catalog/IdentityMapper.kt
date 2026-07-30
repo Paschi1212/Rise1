@@ -43,6 +43,7 @@ public class IdentityMapper(
             }
 
             val identityUid = uid(id)
+            val slug = SlugAscii.of(name)
             val textRaw = karte["text"] as? String ?: ""
             val flavor = (karte["flavor"] as? String)?.trim()
 
@@ -51,7 +52,7 @@ public class IdentityMapper(
                 setCode = setCode,
                 cardNumber = id,
                 name = name,
-                slugAscii = SlugAscii.of(name),
+                slugAscii = slug,
                 role = rolle.key,
                 color = karte["color"] as? String ?: "",
                 typeLine = karte["type"] as? String ?: "",
@@ -63,7 +64,11 @@ public class IdentityMapper(
                 flavor = flavor?.ifEmpty { null },
                 artist = karte["artist"] as? String ?: "",
                 unveilCost = UnveilCost.of(textRaw),
-                imageAsset = null, // T-012
+                // T-012: Der Asset-Name wird aus dem Slug gebildet, nicht aus
+                // dem Quellnamen — der trägt Sonderzeichen wie `Æ` und taugt
+                // nicht als Dateiname im APK. Dass die Datei auch wirklich
+                // existiert, prüft `ImageAudit` beim Bezug.
+                imageAsset = "$slug$BILD_ENDUNG",
                 sourceUri = karte["uri"] as? String ?: "",
             )
 
@@ -113,6 +118,16 @@ public class IdentityMapper(
         return MappingResult(daten, emptyList())
     }
 
+    public companion object {
+        /**
+         * JPEG bleibt JPEG. Entschieden am 2026-07-30 mit `T-012`: Eine
+         * Wandlung nach WebP bräuchte `cwebp` als externes Programm — eine
+         * Werkzeugabhängigkeit außerhalb von Gradle für 62 Bilder. Der Preis
+         * ist etwas APK-Größe, der Gewinn eine Pipeline ohne Fremdwerkzeug.
+         */
+        public const val BILD_ENDUNG: String = ".jpg"
+    }
+
     /** `TRD-2025:001` — dreistellig aufgefüllt, damit die Sortierung stimmt. */
     private fun uid(id: Int): String = "$setCode:${id.toString().padStart(3, '0')}"
 }
@@ -126,7 +141,6 @@ public data class MappingResult(
     public fun render(): String = if (isValid) {
         val d = data!!
         val ohneCost = d.identities.count { it.unveilCost == null }
-        val reineMana = d.identities.count { it.unveilCost?.let(UnveilCost::istReineManaAngabe) == true }
         buildString {
             appendLine("Transformation in Ordnung.")
             appendLine("  Identitäten:   ${d.identities.size}")
@@ -134,8 +148,8 @@ public data class MappingResult(
             d.identities.groupingBy { it.role }.eachCount().toSortedMap()
                 .forEach { (rolle, anzahl) -> appendLine("  Rolle $rolle: $anzahl") }
             appendLine("  Unveil-Cost:   ${d.identities.size - ohneCost} vorhanden, $ohneCost ohne (Leader)")
-            appendLine("                 davon $reineMana reine Mana-Angaben")
-            append("  Slugs:         ${d.identities.map { it.slugAscii }.distinct().size} eindeutig")
+            appendLine("  Slugs:         ${d.identities.map { it.slugAscii }.distinct().size} eindeutig")
+            append("  Bild-Assets:   ${d.identities.mapNotNull { it.imageAsset }.distinct().size} Namen aus slug_ascii")
         }
     } else {
         buildString {

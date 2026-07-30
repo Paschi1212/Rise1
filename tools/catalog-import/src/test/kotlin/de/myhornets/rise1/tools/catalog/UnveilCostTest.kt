@@ -2,9 +2,7 @@ package de.myhornets.rise1.tools.catalog
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * T-011 — Unveil-Cost. **Alle Eingaben sind wörtliche Ausschnitte aus der
@@ -101,14 +99,5 @@ class UnveilCostTest {
     @Test
     fun `ein Wort das nur mit Unveil beginnt zaehlt nicht`() {
         assertNull(UnveilCost.of("Unveiling the truth costs nothing.|Wirkung."))
-    }
-
-    @Test
-    fun `reine Manaangabe wird erkannt`() {
-        assertTrue(UnveilCost.istReineManaAngabe("{3}"))
-        assertTrue(UnveilCost.istReineManaAngabe("{X}{X}{2}"))
-        assertFalse(UnveilCost.istReineManaAngabe("Discard a nonland card."))
-        assertFalse(UnveilCost.istReineManaAngabe("{5}, Pay 5 life."))
-        assertFalse(UnveilCost.istReineManaAngabe(""))
     }
 }

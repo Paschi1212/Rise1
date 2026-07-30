@@ -24,6 +24,17 @@ package de.myhornets.rise1.tools.catalog
  */
 public object UnveilCost {
 
+    // Bewusst NICHT vorhanden: eine Deutung des Ausdrucks. Es gab hier einmal
+    // ein `istReineManaAngabe`, das Mana-Kosten von Alternativkosten trennte.
+    // Entfernt am 2026-07-30 mit der Produktabgrenzung: Katalogdaten
+    // BESCHREIBEN Karten, sie bilden keine Spielregeln ab. Wer den Ausdruck
+    // deuten will, tut das am Tisch — die App zeigt ihn an, mehr nicht.
+    //
+    // Seinen Zweck hat er erfüllt: Er hat gezeigt, dass 24 der 49 Kosten keine
+    // Mana-Angaben sind, und damit die Entscheidung für den rohen String
+    // begründet. Die Zahl steht in der Dokumentation; die Funktion braucht es
+    // dafür nicht mehr.
+
     private const val TRENNER = '|'
     private const val SCHLUESSELWORT = "Unveil"
 
@@ -50,11 +61,4 @@ public object UnveilCost {
         return !naechstes.isLetter()
     }
 
-    /**
-     * Ob der Ausdruck ausschließlich aus Mana-Symbolen besteht. Nicht für die
-     * Speicherung gedacht, sondern für die Auswertung beim Import: Sie sagt,
-     * wie viele der 62 Karten eine reine Mana-Angabe haben und wie viele nicht.
-     */
-    public fun istReineManaAngabe(ausdruck: String): Boolean =
-        ausdruck.isNotEmpty() && Regex("^(\\{[^}]+\\})+$").matches(ausdruck)
 }

@@ -14,12 +14,35 @@ kotlin = "2.2.20"
 tink = "1.18.0"
 junit4 = "4.13.2"
 
+# D-004 (2026-07-30): Jetpack Compose als UI-Grundlage.
+#
+# Bewusst über die BOM: Sie legt die Versionen ALLER Compose-Artefakte fest,
+# damit hier genau EINE Koordinate gepflegt werden muss statt eines halben
+# Dutzends. Das Compiler-Plugin ist seit Kotlin 2.0 an die Kotlin-Version
+# gekoppelt und hat deshalb keinen eigenen Eintrag.
+#
+# UNGEPRÜFT wie agp/kotlin/tink. Scheitert der Build an Compose, ist fast immer
+# nur `composeBom` anzupassen — `androidx-activity` ist die einzige weitere.
+composeBom = "2025.09.00"
+androidxActivity = "1.11.0"
+
 [libraries]
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
+
+# Compose — Versionen kommen aus der BOM, deshalb ohne version.ref.
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+# Seit Kotlin 2.0 folgt das Compose-Plugin der Kotlin-Version — kein eigener Stand.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

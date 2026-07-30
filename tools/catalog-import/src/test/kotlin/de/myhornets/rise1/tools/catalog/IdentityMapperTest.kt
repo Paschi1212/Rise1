@@ -48,7 +48,18 @@ class IdentityMapperTest {
         assertEquals("guardian", i.role)
         assertEquals("Identity — Guardian", i.typeLine)
         assertEquals("{3}", i.unveilCost)
-        assertNull(i.imageAsset)
+        // T-012: Der Asset-Name kommt aus dem Slug, nicht aus dem Quellnamen —
+        // "The Ætherist.jpg" wäre als Dateiname im APK untauglich.
+        assertEquals("the-aetherist.jpg", i.imageAsset)
+    }
+
+    @Test
+    fun `Asset-Namen sind so eindeutig wie die Slugs`() {
+        val r = map(karte(1, "The Ætherist"), karte(2, "The Augur"), karte(3, "Death's Shadow"))
+        val namen = r.data!!.identities.mapNotNull { it.imageAsset }
+        assertEquals(3, namen.distinct().size)
+        assertTrue(namen.all { it.endsWith(".jpg") }, namen.toString())
+        assertTrue(namen.none { it.any { c -> c.code > 127 } }, "Asset-Name nicht ASCII-rein: $namen")
     }
 
     @Test

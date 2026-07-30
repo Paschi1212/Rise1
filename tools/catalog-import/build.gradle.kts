@@ -3,20 +3,23 @@ plugins {
     application
 }
 
-// Abhängigkeiten nach den Vorgaben zu T-010:
+// Abhängigkeiten nach der Regel aus T-013 (siehe Vault, Modules.md):
 //
-//   minimale Abhängigkeit  — genau EIN Artefakt, und das ohne transitive
-//                            Abhängigkeiten. Die Validierungslogik selbst hat
-//                            NULL Abhängigkeiten und kennt kein JSON.
-//   nur für das Werkzeug   — eigenständiger Build, eigener Abhängigkeitsgraph
-//   keine Auswirkung       — die App-Module sehen davon strukturell nichts
+//   Build-Werkzeuge dürfen zusätzliche Gradle-Abhängigkeiten verwenden, wenn
+//   sie reproduzierbare Artefakte erzeugen. Systemwerkzeuge mit lokaler
+//   Installation werden vermieden. Für Laufzeit und APK bleibt es bei
+//   Minimalismus — dieses Werkzeug wird nie ausgeliefert.
 //
-// Warum Gson und nicht kotlinx.serialization: Letzteres verlangt zusätzlich
-// ein Compiler-Plugin. Zwei bewegliche Teile statt einem, für einen Nutzen,
-// den wir hier nicht brauchen — siehe JsonAdapter.
+// Gson statt kotlinx.serialization: Letzteres verlangt zusätzlich ein
+// Compiler-Plugin. Zwei bewegliche Teile statt einem.
+//
+// sqlite-jdbc statt des sqlite3-Programms: Ein Artefakt ist versionierbar und
+// auf jedem Rechner gleich; ein lokal installiertes Programm ist es nicht.
+// Aus demselben Grund wurde cwebp in T-012 abgelehnt.
 
 dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
+    implementation("org.xerial:sqlite-jdbc:3.50.1.0")
 
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
@@ -37,7 +40,7 @@ application {
     mainClass.set("de.myhornets.rise1.tools.catalog.MainKt")
 }
 
-// Bequemer Einstiegspunkt: gradle -p tools/catalog-import validate
+// Bequemer Einstiegspunkt: ./gradlew validate
 tasks.register<JavaExec>("validate") {
     group = "verification"
     description = "Prüft Prüfsumme und Struktur der eingecheckten Treachery-Quelldatei."
