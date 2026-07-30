@@ -1,0 +1,25 @@
+# Version-Katalog — T-001
+#
+# ACHTUNG: Diese Versionen konnten in der Entwicklungsumgebung nicht gegen die
+# Repositories geprüft werden (kein Netzzugang zu Maven Central / Google Maven).
+# Beim ersten lokalen Build bitte bestätigen; siehe README, Abschnitt "Erster Build".
+#
+# SDK-Level aus D-001: compileSdk 36, targetSdk 36, minSdk 29.
+# Tink aus ADR-002: hier nur im Katalog geführt, noch von keinem Modul verwendet
+# (Verwendung erst in E05 / T-050).
+
+[versions]
+agp = "8.13.0"
+kotlin = "2.2.20"
+tink = "1.18.0"
+junit4 = "4.13.2"
+
+[libraries]
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

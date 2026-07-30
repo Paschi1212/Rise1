@@ -1,0 +1,3 @@
+# Der Herkunftsnachweis wird beim Prüfen erzeugt und ist ein Ergebnis,
+# keine Eingabe. Quelldatei und Prüfsumme gehören dagegen ins Repository.
+provenance.json

@@ -1,0 +1,8 @@
+# Kopie als local.properties anlegen und den Pfad zum Android SDK eintragen.
+# Android Studio macht das beim ersten Öffnen von selbst.
+#
+# Windows:
+# sdk.dir=C:\\Users\\<name>\\AppData\\Local\\Android\\Sdk
+#
+# Linux / macOS:
+# sdk.dir=/home/<name>/Android/Sdk
