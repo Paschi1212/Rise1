@@ -46,6 +46,17 @@ gradle.projectsEvaluated {
         sub.configurations.forEach { configuration ->
             configuration.dependencies
                 .withType(ProjectDependency::class.java)
+                // Ein Selbstbezug ist keine Modulkante und wird übergangen.
+                //
+                // Das Android-Gradle-Plugin legt für die Testkomponenten eines
+                // Moduls Konfigurationen an, in denen das Modul auf sich selbst
+                // zeigt — die Testkomponente hängt am getesteten Modul. Ohne
+                // diesen Filter meldet die Prüfung genau das als Verstoß, obwohl
+                // eine Kante von A nach A keine Grenze überschreitet.
+                //
+                // Der Filter vergleicht Projektpfade, nicht Namen: Nur das Modul
+                // selbst wird entfernt, jede echte Kante bleibt erhalten.
+                .filterNot { dep -> dep.path == sub.path }
                 .forEach { dep -> deps += dep.path.trimStart(':') }
         }
         declaredModuleEdges[sub.name] = deps
