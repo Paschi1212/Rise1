@@ -3,18 +3,18 @@ package de.myhornets.rise1.tools.catalog
 import java.io.File
 import java.time.Instant
 
-private const val TOOL_VERSION = "T-010"
+private const val TOOL_VERSION = "T-011"
+private const val CATALOG_VERSION = "1"
+private const val SET_CODE = "TRD-2025"
 private const val SOURCE_URL = "https://mtgtreachery.net/rules/oracle/treachery-cards.json"
 private const val SOURCE_FILE = "treachery-cards.json"
 private const val CHECKSUM_FILE = "treachery-cards.json.sha256"
 private const val PROVENANCE_FILE = "provenance.json"
 
 /**
- * Einstiegspunkt des Import-Werkzeugs. T-010.
+ * Einstiegspunkt des Import-Werkzeugs. T-010 (laden und prüfen), T-011 (abbilden).
  *
- * Umfang von T-010: **laden und prüfen**. Die Transformation ist T-011, der
- * Bau von `catalog.db` ist T-013. Dieses Werkzeug erzeugt nichts außer dem
- * Herkunftsnachweis.
+ * Der Bau von `catalog.db` ist `T-013` und passiert hier nicht.
  *
  * Es lädt **nichts aus dem Netz**. Die Quelldatei liegt versioniert im
  * Repository; ein erneuter Download ist ein bewusster manueller Schritt und in
@@ -26,15 +26,80 @@ public fun main(args: Array<String>) {
 
     when (befehl) {
         "validate" -> validate(verzeichnis)
+        "transform" -> transform(verzeichnis)
         "checksum" -> checksum(verzeichnis)
         else -> {
-            System.err.println("Unbekannter Befehl '$befehl'. Erlaubt: validate, checksum")
+            System.err.println("Unbekannter Befehl '$befehl'. Erlaubt: validate, transform, checksum")
             kotlin.system.exitProcess(2)
         }
     }
 }
 
+/** Prüfsumme und Struktur. Schreibt bei Erfolg den Herkunftsnachweis. */
 private fun validate(verzeichnis: File) {
+    val (wurzel, pruefsumme) = ladeUndPruefe(verzeichnis)
+    val bericht = CatalogSourceValidator().validate(wurzel)
+    println(bericht.render())
+    if (!bericht.isValid) kotlin.system.exitProcess(1)
+
+    val kopf = bericht.header!!
+    val nachweis = Provenance(
+        sourceUrl = SOURCE_URL,
+        sourceFile = SOURCE_FILE,
+        sha256 = pruefsumme,
+        apiVersion = kopf.apiVersion,
+        apiAuthor = kopf.apiAuthor,
+        setCode = kopf.setCode,
+        setLang = kopf.setLang,
+        cardsCount = kopf.cardsCount,
+        validatedAt = Instant.now().toString(),
+        toolVersion = TOOL_VERSION,
+    )
+    File(verzeichnis, PROVENANCE_FILE).writeText(JsonAdapter.toPrettyJson(nachweis) + "\n")
+    println("Herkunftsnachweis geschrieben: ${File(verzeichnis, PROVENANCE_FILE).path}")
+}
+
+/**
+ * Prüft **und** bildet auf das Zielschema ab. T-011.
+ *
+ * Erzeugt bewusst keine Datei: Dieser Befehl ist der Nachweis, dass die
+ * Abbildung über alle 62 echten Karten trägt — Rollenverteilung, eindeutige
+ * Slugs, Unveil-Kosten. Was daraus eine Datenbank macht, ist `T-013`.
+ */
+private fun transform(verzeichnis: File) {
+    val (wurzel, pruefsumme) = ladeUndPruefe(verzeichnis)
+
+    val bericht = CatalogSourceValidator().validate(wurzel)
+    if (!bericht.isValid) {
+        println(bericht.render())
+        kotlin.system.exitProcess(1)
+    }
+
+    val ergebnis = IdentityMapper(SET_CODE, CATALOG_VERSION).map(
+        wurzel = wurzel,
+        sourceUrl = SOURCE_URL,
+        sourceChecksum = pruefsumme,
+        importedAt = Instant.now().toString(),
+    )
+    println(ergebnis.render())
+    if (!ergebnis.isValid) kotlin.system.exitProcess(1)
+}
+
+private fun checksum(verzeichnis: File) {
+    val quelle = File(verzeichnis, SOURCE_FILE)
+    if (!quelle.isFile) abbruch("Die Quelldatei fehlt: ${quelle.path}")
+    val summe = SourceChecksum.of(quelle)
+    File(verzeichnis, CHECKSUM_FILE).writeText("$summe  $SOURCE_FILE\n")
+    println("Prüfsumme geschrieben: $summe")
+    println("Diese Änderung gehört bewusst in einen Commit — sie erklärt, dass die Quelle erneuert wurde.")
+}
+
+/**
+ * Gemeinsamer Vorlauf von `validate` und `transform`: Datei da, Prüfsumme
+ * stimmt, JSON gelesen. Die Prüfsumme wird **vor** dem Parsen verglichen —
+ * eine Datei, die sich unbemerkt geändert hat, wird gar nicht erst gelesen.
+ */
+private fun ladeUndPruefe(verzeichnis: File): Pair<Map<String, Any?>, String> {
     val quelle = File(verzeichnis, SOURCE_FILE)
     val pruefsummendatei = File(verzeichnis, CHECKSUM_FILE)
 
@@ -52,8 +117,6 @@ private fun validate(verzeichnis: File) {
         )
     }
 
-    // Prüfsumme VOR dem Parsen. Eine Datei, die sich unbemerkt geändert hat,
-    // wird gar nicht erst verarbeitet.
     val tatsaechlich = SourceChecksum.of(quelle)
     val erwartet = pruefsummendatei.readText().trim().substringBefore(' ')
     if (!SourceChecksum.matches(tatsaechlich, erwartet)) {
@@ -68,39 +131,12 @@ private fun validate(verzeichnis: File) {
         )
     }
 
-    val bericht = try {
-        CatalogSourceValidator().validate(JsonAdapter.parse(quelle.readText()))
+    val wurzel = try {
+        JsonAdapter.parse(quelle.readText())
     } catch (e: Exception) {
         abbruch("Die Quelldatei ließ sich nicht lesen: ${e.message}")
     }
-
-    println(bericht.render())
-    if (!bericht.isValid) kotlin.system.exitProcess(1)
-
-    val kopf = bericht.header!!
-    val nachweis = Provenance(
-        sourceUrl = SOURCE_URL,
-        sourceFile = SOURCE_FILE,
-        sha256 = tatsaechlich,
-        apiVersion = kopf.apiVersion,
-        apiAuthor = kopf.apiAuthor,
-        setCode = kopf.setCode,
-        setLang = kopf.setLang,
-        cardsCount = kopf.cardsCount,
-        validatedAt = Instant.now().toString(),
-        toolVersion = TOOL_VERSION,
-    )
-    File(verzeichnis, PROVENANCE_FILE).writeText(JsonAdapter.toPrettyJson(nachweis) + "\n")
-    println("Herkunftsnachweis geschrieben: ${File(verzeichnis, PROVENANCE_FILE).path}")
-}
-
-private fun checksum(verzeichnis: File) {
-    val quelle = File(verzeichnis, SOURCE_FILE)
-    if (!quelle.isFile) abbruch("Die Quelldatei fehlt: ${quelle.path}")
-    val summe = SourceChecksum.of(quelle)
-    File(verzeichnis, CHECKSUM_FILE).writeText("$summe  $SOURCE_FILE\n")
-    println("Prüfsumme geschrieben: $summe")
-    println("Diese Änderung gehört bewusst in einen Commit — sie erklärt, dass die Quelle erneuert wurde.")
+    return wurzel to tatsaechlich
 }
 
 private fun abbruch(vararg zeilen: String): Nothing {

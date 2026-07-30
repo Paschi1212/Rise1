@@ -21,6 +21,15 @@ import de.myhornets.rise1.core.log.RiseLog
  * Sie wird mit der Tischansicht aus `T-140` (E10) ersetzt. Bis dahin ist sie
  * absichtlich ohne Bibliothek gebaut: kein AppCompat, kein Compose, keine
  * Ressourcendateien.
+ *
+ * **Die Versionsangabe kommt aus `BuildConfig`, nicht aus dieser Datei.** Sie
+ * stand hier einmal als Zeichenkette und lief mit dem Build auseinander: Die
+ * APK meldete „T-001 bis T-005", während der Stand längst bei T-011 war. Eine
+ * Oberfläche, die einen falschen Stand behauptet, macht jeden Gerätetest
+ * schwer deutbar — genau das ist am 29.07. einmal passiert.
+ *
+ * **Die Liste unter UMGESETZT bleibt Handarbeit** und gehört zur Definition of
+ * Done jedes Tasks, der etwas Sichtbares ändert.
  */
 class StatusActivity : Activity() {
 
@@ -81,9 +90,10 @@ class StatusActivity : Activity() {
         }
 
         spalte.addView(titel("Rise 1.0"))
-        spalte.addView(unterzeile("Gerüst · T-001 bis T-005 · Version 0.1.0-T005"))
+        // Version ausschließlich aus dem Build — siehe Klassenkommentar.
+        spalte.addView(unterzeile("Gerüst · Version ${BuildConfig.VERSION_NAME}"))
 
-        spalte.addView(abschnitt("UMGESETZT"))
+        spalte.addView(abschnitt("UMGESETZT — GERÜST"))
         listOf(
             "T-001  Projekt, SDK 36 / min 29, Version-Katalog",
             "T-002  Neun Module nach TDD 2.2",
@@ -92,9 +102,19 @@ class StatusActivity : Activity() {
             "T-005  Protokollierung und Fehlerkonzept",
         ).forEach { spalte.addView(zeile("✓  $it")) }
 
+        spalte.addView(abschnitt("UMGESETZT — KATALOG-IMPORT"))
+        spalte.addView(zeile("✓  T-010  Quelle laden und prüfen"))
+        spalte.addView(zeile("✓  T-011  Transformation nach TDD 4.1"))
+        spalte.addView(
+            zeile(
+                "Läuft zur Build-Zeit unter tools/, nicht in der App. " +
+                    "62 Identitäten, 295 Rulings — noch nicht in einer Datenbank."
+            )
+        )
+
         spalte.addView(abschnitt("NOCH LEER — PLATZHALTER"))
         listOf(
-            "catalog     Kartendaten           → E02",
+            "catalog     Kartendaten           → E02 (T-013, T-014)",
             "core        Event-Modell          → E04",
             "projection  Anzeigezustand        → E04",
             "crypto      Tink, Schlüssel       → E05",

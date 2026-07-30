@@ -16,8 +16,17 @@ android {
         applicationId = "de.myhornets.rise1"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-T005"
+        versionCode = 2
+        // Die EINZIGE Stelle, an der der Stand steht. Die Statusansicht liest
+        // ihn über BuildConfig — damit können Anzeige und Build nicht mehr
+        // auseinanderlaufen, wie es zwischen T-005 und T-011 passiert ist.
+        versionName = "0.2.0-T011"
+    }
+
+    buildFeatures {
+        // Für BuildConfig.VERSION_NAME in der Statusansicht. Ab AGP 8 muss das
+        // ausdrücklich eingeschaltet werden.
+        buildConfig = true
     }
 
     buildTypes {
