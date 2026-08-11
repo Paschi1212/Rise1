@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        T-070 — der Sockettransport öffnet TCP-Verbindungen. Ohne diese
+        Berechtigung scheitert schon der erste `connect`, und zwar mit einem
+        Fehlerbild, das wie „kein gemeinsames Netz" aussieht (ADR-001).
+        Sie wird nicht zur Laufzeit erfragt.
+
+        ADR-001 nennt zusätzlich `ACCESS_LOCAL_NETWORK` ab Android 17 für das
+        Host-Gerät. Sie steht hier bewusst NOCH NICHT: Sie ist eine
+        Laufzeitberechtigung mit eigenem Ablauf, und der ist `T-076`.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        T-075 — der Vordergrunddienst. ADR-001: „Ein Vordergrunddienst mit
+        Benachrichtigung läuft, solange eine Partie aktiv ist."
+
+        FOREGROUND_SERVICE_DATA_SYNC gehört zum Dienstart `dataSync`; ab
+        Android 14 verlangt jeder Vordergrunddienst einen. Die Begründung für
+        genau diesen Typ steht in `Sitzungsdienst`.
+
+        POST_NOTIFICATIONS ist ab Android 13 nötig, damit die Benachrichtigung
+        SICHTBAR ist — der Dienst läuft auch ohne sie. Der Ablauf, sie zu
+        erfragen, gehört zu `T-076` und steht deshalb noch nirgends.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="false"
         android:label="Rise 1.0"
@@ -50,6 +78,27 @@
             android:name=".StatusActivity"
             android:exported="false"
             android:label="Rise 1.0 — Status" />
+
+        <!--
+            T-075 — der Vordergrunddienst, der den Sitzungsthread hält.
+
+            ADR-008: „Der Vordergrunddienst hält den Sitzungsthread am Leben,
+            nicht die Oberfläche. Eine Activity, die verschwindet, darf keine
+            Verbindung beenden."
+
+            Nicht exportiert: Er wird ausschließlich aus der App heraus
+            gestartet. Ein fremder Start wäre ein Dienst ohne Bausatz — er
+            würde sich sofort wieder beenden, aber die Möglichkeit gehört gar
+            nicht erst eröffnet.
+
+            `dataSync`: Der Dienst hält den Abgleich des Event-Logs zwischen den
+            Geräten am Laufen. Die Wahl und ihre bekannte Grenze — sechs Stunden
+            je 24 ab Android 15 — sind in `Sitzungsdienst` begründet.
+        -->
+        <service
+            android:name=".sitzung.Sitzungsdienst"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>
