@@ -1,11 +1,13 @@
 // T-001 Wurzel-Build · T-003 Architektur-Fitnesstest
 
 plugins {
+    alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    // T-014: Room über KSP, angewandt nur in :catalog.
+    alias(libs.plugins.ksp) apply false
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +29,11 @@ val allowedModuleEdges: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
     "crypto" to emptySet(),
     "catalog" to emptySet(),
+    // ADR-003: :store besitzt rise.db. Keine Kante auf ein Projektmodul —
+    // eine Ablage ist kein Mitspieler. Insbesondere bekommt :host KEINE Kante
+    // hierher: rise.db enthält own_identity, und der Host darf keine
+    // Klartext-Identität kennen (TDD 7.4).
+    "store" to emptySet(),
     "transport" to emptySet(),
     "projection" to setOf("core"),
     "deal" to setOf("core", "crypto"),
@@ -35,7 +42,7 @@ val allowedModuleEdges: Map<String, Set<String>> = mapOf(
     "host" to setOf("core", "transport"),
     "ui" to setOf(
         "core", "projection", "catalog", "crypto",
-        "deal", "transport", "session", "host",
+        "deal", "transport", "session", "host", "store",
     ),
 )
 
@@ -74,7 +81,7 @@ tasks.register("verifyModuleBoundaries") {
         val unknown = declaredModuleEdges.keys - allowedModuleEdges.keys
         if (unknown.isNotEmpty()) {
             problems += "Unbekannte Module ohne Regel: ${unknown.sorted()}. " +
-                "TDD 2.2 nennt genau neun Module — ein zehntes braucht eine ADR, keine stille Ergänzung."
+                "TDD 2.2 plus ADR-003 nennen genau zehn Module — ein elftes braucht eine ADR, keine stille Ergänzung."
         }
 
         allowedModuleEdges.forEach { (module, allowed) ->

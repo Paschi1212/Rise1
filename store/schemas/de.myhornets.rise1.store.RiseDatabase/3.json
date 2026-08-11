@@ -1,0 +1,887 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "1610288cb0ffd07929df8d78118fc41d",
+    "entities": [
+      {
+        "tableName": "device",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`device_uid` TEXT NOT NULL, `display_name` TEXT NOT NULL, `platform` TEXT NOT NULL, `is_self` INTEGER NOT NULL, `last_seen_at` INTEGER, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `deleted_at` INTEGER, `origin_device_uid` TEXT NOT NULL, PRIMARY KEY(`device_uid`))",
+        "fields": [
+          {
+            "fieldPath": "deviceUid",
+            "columnName": "device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "platform",
+            "columnName": "platform",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSelf",
+            "columnName": "is_self",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "originDeviceUid",
+            "columnName": "origin_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "device_uid"
+          ]
+        }
+      },
+      {
+        "tableName": "player",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`player_uid` TEXT NOT NULL, `display_name` TEXT NOT NULL, `avatar_ref` TEXT, `color_tag` TEXT, `is_guest` INTEGER NOT NULL, `linked_device_uid` TEXT, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `deleted_at` INTEGER, `origin_device_uid` TEXT NOT NULL, PRIMARY KEY(`player_uid`))",
+        "fields": [
+          {
+            "fieldPath": "playerUid",
+            "columnName": "player_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarRef",
+            "columnName": "avatar_ref",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorTag",
+            "columnName": "color_tag",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isGuest",
+            "columnName": "is_guest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "linkedDeviceUid",
+            "columnName": "linked_device_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "originDeviceUid",
+            "columnName": "origin_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "player_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_player_linked_device_uid",
+            "unique": false,
+            "columnNames": [
+              "linked_device_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_player_linked_device_uid` ON `${TABLE_NAME}` (`linked_device_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "match",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`match_uid` TEXT NOT NULL, `mode_uid` TEXT NOT NULL, `host_device_uid` TEXT NOT NULL, `status` TEXT NOT NULL, `host_heartbeat_at` INTEGER, `player_count` INTEGER NOT NULL, `catalog_version_used` TEXT NOT NULL, `set_code_used` TEXT NOT NULL, `deal_transcript_digest` TEXT, `moderator_mode` INTEGER NOT NULL, `started_at` INTEGER, `ended_at` INTEGER, `last_applied_seq` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `deleted_at` INTEGER, `origin_device_uid` TEXT NOT NULL, PRIMARY KEY(`match_uid`), FOREIGN KEY(`host_device_uid`) REFERENCES `device`(`device_uid`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modeUid",
+            "columnName": "mode_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hostDeviceUid",
+            "columnName": "host_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hostHeartbeatAt",
+            "columnName": "host_heartbeat_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "playerCount",
+            "columnName": "player_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogVersionUsed",
+            "columnName": "catalog_version_used",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setCodeUsed",
+            "columnName": "set_code_used",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dealTranscriptDigest",
+            "columnName": "deal_transcript_digest",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "moderatorMode",
+            "columnName": "moderator_mode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "started_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endedAt",
+            "columnName": "ended_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastAppliedSeq",
+            "columnName": "last_applied_seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "originDeviceUid",
+            "columnName": "origin_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "match_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_match_host_device_uid",
+            "unique": false,
+            "columnNames": [
+              "host_device_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_match_host_device_uid` ON `${TABLE_NAME}` (`host_device_uid`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "device",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "host_device_uid"
+            ],
+            "referencedColumns": [
+              "device_uid"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "match_participant",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`participant_uid` TEXT NOT NULL, `match_uid` TEXT NOT NULL, `player_uid` TEXT, `seat_index` INTEGER NOT NULL, `display_name_snapshot` TEXT NOT NULL, `identity_commitment` TEXT, `is_revealed` INTEGER NOT NULL, `revealed_at_seq` INTEGER, `revealed_identity_uid` TEXT, `identity_name_snapshot` TEXT, `identity_role_snapshot` TEXT, `final_status` TEXT, `placement` INTEGER, `rejoin_token_hash` TEXT, `seat_state` TEXT NOT NULL, `last_seen_at` INTEGER, `created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `deleted_at` INTEGER, `origin_device_uid` TEXT NOT NULL, PRIMARY KEY(`participant_uid`), FOREIGN KEY(`match_uid`) REFERENCES `match`(`match_uid`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`player_uid`) REFERENCES `player`(`player_uid`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "participantUid",
+            "columnName": "participant_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playerUid",
+            "columnName": "player_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seatIndex",
+            "columnName": "seat_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayNameSnapshot",
+            "columnName": "display_name_snapshot",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identityCommitment",
+            "columnName": "identity_commitment",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isRevealed",
+            "columnName": "is_revealed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revealedAtSeq",
+            "columnName": "revealed_at_seq",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "revealedIdentityUid",
+            "columnName": "revealed_identity_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "identityNameSnapshot",
+            "columnName": "identity_name_snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "identityRoleSnapshot",
+            "columnName": "identity_role_snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "finalStatus",
+            "columnName": "final_status",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "placement",
+            "columnName": "placement",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rejoinTokenHash",
+            "columnName": "rejoin_token_hash",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "seatState",
+            "columnName": "seat_state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "last_seen_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deleted_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "originDeviceUid",
+            "columnName": "origin_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "participant_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_match_participant_match_uid_seat_index",
+            "unique": true,
+            "columnNames": [
+              "match_uid",
+              "seat_index"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_match_participant_match_uid_seat_index` ON `${TABLE_NAME}` (`match_uid`, `seat_index`)"
+          },
+          {
+            "name": "index_match_participant_player_uid",
+            "unique": false,
+            "columnNames": [
+              "player_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_match_participant_player_uid` ON `${TABLE_NAME}` (`player_uid`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "match",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "match_uid"
+            ],
+            "referencedColumns": [
+              "match_uid"
+            ]
+          },
+          {
+            "table": "player",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "player_uid"
+            ],
+            "referencedColumns": [
+              "player_uid"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "prototype_assignment",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`match_uid` TEXT NOT NULL, `participant_uid` TEXT NOT NULL, `identity_uid` TEXT NOT NULL, `assigned_at` INTEGER NOT NULL, PRIMARY KEY(`match_uid`, `participant_uid`))",
+        "fields": [
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantUid",
+            "columnName": "participant_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identityUid",
+            "columnName": "identity_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assignedAt",
+            "columnName": "assigned_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "match_uid",
+            "participant_uid"
+          ]
+        }
+      },
+      {
+        "tableName": "match_event",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`event_uid` TEXT NOT NULL, `match_uid` TEXT NOT NULL, `seq` INTEGER, `origin_device_uid` TEXT NOT NULL, `origin_seq` INTEGER NOT NULL, `lamport_clock` INTEGER NOT NULL, `occurred_at` INTEGER NOT NULL, `recorded_at` INTEGER, `type` TEXT NOT NULL, `event_class` TEXT NOT NULL, `actor_participant_uid` TEXT, `target_participant_uid` TEXT, `payload_json` TEXT, `payload_ciphertext` BLOB, `enc_scheme` TEXT, `payload_schema_version` INTEGER NOT NULL, `visibility` TEXT NOT NULL, `recipient_participant_uid` TEXT, `is_undone` INTEGER NOT NULL, `undone_by_event_uid` TEXT, `has_conflict` INTEGER NOT NULL, PRIMARY KEY(`event_uid`))",
+        "fields": [
+          {
+            "fieldPath": "eventUid",
+            "columnName": "event_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seq",
+            "columnName": "seq",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "originDeviceUid",
+            "columnName": "origin_device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originSeq",
+            "columnName": "origin_seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lamportClock",
+            "columnName": "lamport_clock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAt",
+            "columnName": "occurred_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordedAt",
+            "columnName": "recorded_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventClass",
+            "columnName": "event_class",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actorParticipantUid",
+            "columnName": "actor_participant_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetParticipantUid",
+            "columnName": "target_participant_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payload_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payloadCiphertext",
+            "columnName": "payload_ciphertext",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "encScheme",
+            "columnName": "enc_scheme",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "payloadSchemaVersion",
+            "columnName": "payload_schema_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visibility",
+            "columnName": "visibility",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipientParticipantUid",
+            "columnName": "recipient_participant_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isUndone",
+            "columnName": "is_undone",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "undoneByEventUid",
+            "columnName": "undone_by_event_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hasConflict",
+            "columnName": "has_conflict",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "event_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_match_event_match_uid_seq",
+            "unique": false,
+            "columnNames": [
+              "match_uid",
+              "seq"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_match_event_match_uid_seq` ON `${TABLE_NAME}` (`match_uid`, `seq`)"
+          },
+          {
+            "name": "index_match_event_origin_device_uid_origin_seq",
+            "unique": true,
+            "columnNames": [
+              "origin_device_uid",
+              "origin_seq"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_match_event_origin_device_uid_origin_seq` ON `${TABLE_NAME}` (`origin_device_uid`, `origin_seq`)"
+          }
+        ]
+      },
+      {
+        "tableName": "participant_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`participant_uid` TEXT NOT NULL, `match_uid` TEXT NOT NULL, `life` INTEGER NOT NULL, `is_revealed` INTEGER NOT NULL, `is_eliminated` INTEGER NOT NULL, `last_applied_seq` INTEGER NOT NULL, PRIMARY KEY(`participant_uid`))",
+        "fields": [
+          {
+            "fieldPath": "participantUid",
+            "columnName": "participant_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "life",
+            "columnName": "life",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRevealed",
+            "columnName": "is_revealed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isEliminated",
+            "columnName": "is_eliminated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAppliedSeq",
+            "columnName": "last_applied_seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "participant_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_participant_state_match_uid",
+            "unique": false,
+            "columnNames": [
+              "match_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participant_state_match_uid` ON `${TABLE_NAME}` (`match_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "participant_counter",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`participant_uid` TEXT NOT NULL, `counter_key` TEXT NOT NULL, `match_uid` TEXT NOT NULL, `value` INTEGER NOT NULL, PRIMARY KEY(`participant_uid`, `counter_key`))",
+        "fields": [
+          {
+            "fieldPath": "participantUid",
+            "columnName": "participant_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "counterKey",
+            "columnName": "counter_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "participant_uid",
+            "counter_key"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_participant_counter_match_uid",
+            "unique": false,
+            "columnNames": [
+              "match_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participant_counter_match_uid` ON `${TABLE_NAME}` (`match_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "match_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`match_uid` TEXT NOT NULL, `turn_number` INTEGER NOT NULL, `active_participant_uid` TEXT, `last_applied_seq` INTEGER NOT NULL, PRIMARY KEY(`match_uid`))",
+        "fields": [
+          {
+            "fieldPath": "matchUid",
+            "columnName": "match_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "turnNumber",
+            "columnName": "turn_number",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeParticipantUid",
+            "columnName": "active_participant_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastAppliedSeq",
+            "columnName": "last_applied_seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "match_uid"
+          ]
+        }
+      },
+      {
+        "tableName": "participant_session",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`session_uid` TEXT NOT NULL, `participant_uid` TEXT NOT NULL, `device_uid` TEXT NOT NULL, `started_at` INTEGER NOT NULL, `ended_at` INTEGER, `end_reason` TEXT, `is_current` INTEGER NOT NULL, `last_delivered_seq` INTEGER NOT NULL, PRIMARY KEY(`session_uid`), FOREIGN KEY(`participant_uid`) REFERENCES `match_participant`(`participant_uid`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`device_uid`) REFERENCES `device`(`device_uid`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "sessionUid",
+            "columnName": "session_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "participantUid",
+            "columnName": "participant_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceUid",
+            "columnName": "device_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "started_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endedAt",
+            "columnName": "ended_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "endReason",
+            "columnName": "end_reason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isCurrent",
+            "columnName": "is_current",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastDeliveredSeq",
+            "columnName": "last_delivered_seq",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "session_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_participant_session_participant_uid",
+            "unique": false,
+            "columnNames": [
+              "participant_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participant_session_participant_uid` ON `${TABLE_NAME}` (`participant_uid`)"
+          },
+          {
+            "name": "index_participant_session_device_uid",
+            "unique": false,
+            "columnNames": [
+              "device_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_participant_session_device_uid` ON `${TABLE_NAME}` (`device_uid`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "match_participant",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "participant_uid"
+            ],
+            "referencedColumns": [
+              "participant_uid"
+            ]
+          },
+          {
+            "table": "device",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "device_uid"
+            ],
+            "referencedColumns": [
+              "device_uid"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1610288cb0ffd07929df8d78118fc41d')"
+    ]
+  }
+}

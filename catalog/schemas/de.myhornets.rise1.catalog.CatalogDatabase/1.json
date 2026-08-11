@@ -1,0 +1,340 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "2fb64bbfbc2ef531be56a1356f6f3801",
+    "entities": [
+      {
+        "tableName": "identity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`identity_uid` TEXT NOT NULL, `set_code` TEXT NOT NULL, `card_number` INTEGER NOT NULL, `name` TEXT NOT NULL, `slug_ascii` TEXT NOT NULL, `role` TEXT NOT NULL, `color` TEXT NOT NULL, `type_line` TEXT NOT NULL, `rarity` TEXT NOT NULL, `text_raw` TEXT NOT NULL, `flavor` TEXT, `artist` TEXT NOT NULL, `unveil_cost` TEXT, `image_asset` TEXT, `source_uri` TEXT NOT NULL, PRIMARY KEY(`identity_uid`))",
+        "fields": [
+          {
+            "fieldPath": "identityUid",
+            "columnName": "identity_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setCode",
+            "columnName": "set_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardNumber",
+            "columnName": "card_number",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slugAscii",
+            "columnName": "slug_ascii",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeLine",
+            "columnName": "type_line",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rarity",
+            "columnName": "rarity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "textRaw",
+            "columnName": "text_raw",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flavor",
+            "columnName": "flavor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "artist",
+            "columnName": "artist",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unveilCost",
+            "columnName": "unveil_cost",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imageAsset",
+            "columnName": "image_asset",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceUri",
+            "columnName": "source_uri",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "identity_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_identity_role",
+            "unique": false,
+            "columnNames": [
+              "role"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_identity_role` ON `${TABLE_NAME}` (`role`)"
+          },
+          {
+            "name": "index_identity_color",
+            "unique": false,
+            "columnNames": [
+              "color"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_identity_color` ON `${TABLE_NAME}` (`color`)"
+          },
+          {
+            "name": "index_identity_set_code",
+            "unique": false,
+            "columnNames": [
+              "set_code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_identity_set_code` ON `${TABLE_NAME}` (`set_code`)"
+          },
+          {
+            "name": "index_identity_slug_ascii",
+            "unique": true,
+            "columnNames": [
+              "slug_ascii"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_identity_slug_ascii` ON `${TABLE_NAME}` (`slug_ascii`)"
+          }
+        ]
+      },
+      {
+        "tableName": "identity_ruling",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ruling_uid` TEXT NOT NULL, `identity_uid` TEXT NOT NULL, `ordinal` INTEGER NOT NULL, `text` TEXT NOT NULL, PRIMARY KEY(`ruling_uid`))",
+        "fields": [
+          {
+            "fieldPath": "rulingUid",
+            "columnName": "ruling_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identityUid",
+            "columnName": "identity_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordinal",
+            "columnName": "ordinal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ruling_uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_identity_ruling_identity_uid",
+            "unique": false,
+            "columnNames": [
+              "identity_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_identity_ruling_identity_uid` ON `${TABLE_NAME}` (`identity_uid`)"
+          }
+        ]
+      },
+      {
+        "tableName": "identity_keyword",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`identity_uid` TEXT NOT NULL, `keyword` TEXT NOT NULL, PRIMARY KEY(`identity_uid`, `keyword`))",
+        "fields": [
+          {
+            "fieldPath": "identityUid",
+            "columnName": "identity_uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keyword",
+            "columnName": "keyword",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "identity_uid",
+            "keyword"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_identity_keyword_keyword",
+            "unique": false,
+            "columnNames": [
+              "keyword"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_identity_keyword_keyword` ON `${TABLE_NAME}` (`keyword`)"
+          }
+        ]
+      },
+      {
+        "tableName": "card_set",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`set_code` TEXT NOT NULL, `name` TEXT NOT NULL, `lang` TEXT NOT NULL, `card_count` INTEGER NOT NULL, `release_year` INTEGER, `is_official` INTEGER NOT NULL, PRIMARY KEY(`set_code`))",
+        "fields": [
+          {
+            "fieldPath": "setCode",
+            "columnName": "set_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lang",
+            "columnName": "lang",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cardCount",
+            "columnName": "card_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseYear",
+            "columnName": "release_year",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isOfficial",
+            "columnName": "is_official",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "set_code"
+          ]
+        }
+      },
+      {
+        "tableName": "catalog_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `catalog_version` TEXT NOT NULL, `source_api_version` TEXT NOT NULL, `source_set_code` TEXT NOT NULL, `source_url` TEXT NOT NULL, `source_checksum` TEXT NOT NULL, `imported_at` TEXT NOT NULL, `sqlite_version` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogVersion",
+            "columnName": "catalog_version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceApiVersion",
+            "columnName": "source_api_version",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceSetCode",
+            "columnName": "source_set_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "source_url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceChecksum",
+            "columnName": "source_checksum",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importedAt",
+            "columnName": "imported_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sqliteVersion",
+            "columnName": "sqlite_version",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2fb64bbfbc2ef531be56a1356f6f3801')"
+    ]
+  }
+}

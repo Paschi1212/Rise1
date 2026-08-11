@@ -7,14 +7,49 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
+        <!--
+            T-017: Der Katalog-Browser ist der Einstiegspunkt. Das ist die
+            erste echte Oberfläche des Projekts; bis dahin startete die
+            Statusseite aus T-005.
+
+            Die Statusseite bleibt vollständig erhalten und ist über die
+            Kopfzeile des Browsers erreichbar — sie zeigt weiterhin den
+            Gerüststand und die versionName aus BuildConfig. Sie verliert nur
+            ihren Platz im Startmenü. Mit T-140 wird sie durch die Tischansicht
+            ersetzt; bis dahin ist der Tausch durch genau diesen Block
+            umkehrbar.
+        -->
         <activity
-            android:name=".StatusActivity"
-            android:exported="true">
+            android:name=".browser.CatalogBrowserActivity"
+            android:exported="true"
+            android:label="Rise 1.0">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            ADR-004 — der lokale Prototyp-Modus. Befristet: Dieser Block
+            verschwindet zusammen mit dem Verzeichnis
+            `de.myhornets.rise1.prototyp` und der Tabelle
+            `prototype_assignment`, sobald T-029/T-030 das echte Verfahren
+            bringen.
+        -->
+        <activity
+            android:name=".prototyp.PrototypActivity"
+            android:exported="false"
+            android:label="Rise 1.0 — Partie (Prototyp)" />
+
+        <!--
+            Nicht exportiert: Sie wird ausschließlich aus der App heraus mit
+            einem ausdrücklichen Intent gestartet. Vorher musste sie exportiert
+            sein, weil der Startmenü-Eintrag daran hing.
+        -->
+        <activity
+            android:name=".StatusActivity"
+            android:exported="false"
+            android:label="Rise 1.0 — Status" />
     </application>
 
 </manifest>

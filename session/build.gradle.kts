@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.android.library)
 }
 
 // Beitritt, Heartbeat, Wiedereinstieg. Inhalt kommt in E08.
@@ -26,9 +26,15 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":core"))
+    // `api`, nicht `implementation`: `FingerabdruckPruefer` nimmt einen
+    // `Fingerabdruck` aus `:core` entgegen und `Sitzungsverbindung` einen
+    // `Transport` samt `Rahmen` aus `:transport` — beide stehen in öffentlichen
+    // Signaturen. Mit `implementation` bekäme jeder Aufrufer denselben Fehler,
+    // den T-014 im Katalog erzeugt hat: „Cannot access ...".
+    api(project(":core"))
+    api(project(":transport"))
+
     implementation(project(":crypto"))
-    implementation(project(":transport"))
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)

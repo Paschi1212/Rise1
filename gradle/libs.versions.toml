@@ -5,6 +5,9 @@
 # Beim ersten lokalen Build bitte bestätigen; siehe README, Abschnitt "Erster Build".
 #
 # SDK-Level aus D-001: compileSdk 36, targetSdk 36, minSdk 29.
+# Der Versuch, auf 37 zu gehen (D-001A), ist am 2026-08-11 zurueckgenommen
+# worden: AGP 9.1.1 braucht eine Kotlin-Fassung, die die neue Android-DSL
+# kennt — Kotlin 2.2.20 ist aelter als AGP 9.0. Siehe D-001A.
 # Tink aus ADR-002: hier nur im Katalog geführt, noch von keinem Modul verwendet
 # (Verwendung erst in E05 / T-050).
 
@@ -26,6 +29,47 @@ junit4 = "4.13.2"
 composeBom = "2025.09.00"
 androidxActivity = "1.11.0"
 
+# ADR-005 (2026-08-10): MVVM mit StateFlow. Genau EIN neues Artefakt —
+# `lifecycle-viewmodel-compose` für `viewModel()`. `collectAsState()` kommt aus
+# `androidx.compose.runtime` und braucht nichts weiter; auf
+# `lifecycle-runtime-compose` (für `collectAsStateWithLifecycle`) wird bewusst
+# verzichtet, solange es genau einen Bildschirm gibt, der ohnehin im
+# Vordergrund steht. Ein zweites ungeprüftes Artefakt wäre ein zweites Risiko
+# ohne Gegenwert.
+#
+# UNGEPRÜFT wie alle Versionen hier. Scheitert der Build daran, ist 2.9.3 oder
+# 2.8.7 der Rückfall — die Klasse `viewModel()` gibt es seit 2.6 unverändert.
+androidxLifecycle = "2.9.4"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# T-014 (2026-07-30): Room und KSP.
+#
+# ALLE VIER FOLGENDEN VERSIONEN SIND UNGEPRÜFT. Sie stehen je an genau einer
+# Stelle; der erste Build entscheidet. Was jeweils zu tun ist, wenn er scheitert:
+#
+# ksp = "2.2.20-2.0.4"
+#   Muss zur Kotlin-Version passen — das Präfix IST die Kotlin-Version. Solange
+#   `kotlin = "2.2.20"` gilt, kommt nur eine `2.2.20-*` in Frage; eine KSP-
+#   Version für 2.2.21 bricht mit "too old for kotlin-...". Bekannt sind
+#   2.2.20-2.0.3 und 2.2.20-2.0.4. Scheitert 2.0.4, ist 2.0.3 der Rückfall.
+#   Ein Sprung auf eine neuere KSP-Reihe verlangt zuerst eine neuere Kotlin-
+#   Version und ist damit keine Nebenbei-Änderung.
+#
+# room = "2.8.4"
+#   Letzter Stand der 2.8er-Reihe. Bewusst NICHT Room 3.x: Das ist eine
+#   brechende Umstellung (Paket `androidx.room3`, KSP-only, Coroutines-first,
+#   SupportSQLite entfällt) und wäre eine Architekturentscheidung, keine
+#   Versionspflege. Scheitert 2.8.4, ist 2.8.3 der Rückfall.
+#
+# androidx-test-*
+#   Nur für den instrumentierten Abnahmetest aus T-014. Landet nicht in der APK.
+# ─────────────────────────────────────────────────────────────────────────────
+ksp = "2.2.20-2.0.4"
+room = "2.8.4"
+androidxTestCore = "1.7.0"
+androidxTestRunner = "1.7.0"
+androidxTestExtJunit = "1.3.0"
+
 [libraries]
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
@@ -34,10 +78,26 @@ junit4 = { module = "junit:junit", version.ref = "junit4" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+# ADR-005 — `viewModel()` in einem Composable.
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
+
+# Room — T-014. Bewusst ohne `room-ktx`: Es bringt Coroutines- und Flow-
+# Erweiterungen, die der Katalog (noch) nicht braucht. Für Laufzeit und APK
+# gilt Minimalismus (Modules.md).
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+# T-025b — MigrationTestHelper. Nur androidTest, nicht in der APK.
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
+
+# Nur androidTest — nicht in der APK.
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -46,3 +106,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 # Seit Kotlin 2.0 folgt das Compose-Plugin der Kotlin-Version — kein eigener Stand.
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
