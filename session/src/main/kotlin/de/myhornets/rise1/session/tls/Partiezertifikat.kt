@@ -97,6 +97,25 @@ class FingerabdruckPruefer(
 ) : X509TrustManager {
 
     /**
+     * Der zuletzt vorgelegte Fingerabdruck — **Auskunft, kein Schalter**.
+     *
+     * `T-070` braucht ihn: `TransportFehler.FingerabdruckPasstNicht` trägt
+     * `erwartet` **und** `gesehen`, damit die Oberfläche beide nebeneinander
+     * zeigen kann. JSSE verpackt die [CertificateException] unterwegs in eine
+     * `SSLHandshakeException`; ohne diese Aufzeichnung bliebe von dem, was
+     * tatsächlich vorgelegt wurde, nur ein Meldungstext, den jemand zerlegen
+     * müsste.
+     *
+     * Er wird **nach** der Ableitung und **vor** dem Vergleich gesetzt — an der
+     * Prüfung selbst ändert er nichts. Ein Wert hier bedeutet nicht, dass etwas
+     * angenommen wurde; der einzige Weg zu einer Verbindung führt weiterhin
+     * durch [checkServerTrusted] ohne Ausnahme.
+     */
+    @Volatile
+    var zuletztGesehen: Fingerabdruck? = null
+        private set
+
+    /**
      * Prüft den Server.
      *
      * @throws CertificateException bei leerer Kette oder abweichendem
@@ -112,6 +131,7 @@ class FingerabdruckPruefer(
             )
 
         val gesehen = Fingerabdruck.vonHostzertifikat(matchUid, vorgelegt.encoded)
+        zuletztGesehen = gesehen
         if (!erwartet.stimmtUeberein(gesehen)) {
             throw CertificateException(
                 "Der Fingerabdruck des Hosts stimmt nicht: erwartet ${erwartet.lesbar}, " +
