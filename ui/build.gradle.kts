@@ -11,6 +11,14 @@ plugins {
 // wäre jede nur ein Versionsrisiko gewesen. Mit T-017 gibt es etwas anzuzeigen.
 // Kein AppCompat: Compose braucht es nicht, ComponentActivity genügt.
 
+// T-076: Das Ziel-SDK entscheidet, ob Android das lokale Netz sperrt — die
+// Sperre gilt ab Ziel-SDK 37 (Android 17), nicht ab einer Geräteversion.
+// `Berechtigungsbedarf` rechnet damit, und deshalb darf diese Zahl NICHT ein
+// zweites Mal im Kotlin-Quelltext stehen: Die Versionsangabe in
+// `StatusActivity` stand schon einmal doppelt und lief mit dem Build
+// auseinander. Sie steht hier einmal und geht von hier in beide Richtungen.
+val zielSdkStand = 36
+
 android {
     namespace = "de.myhornets.rise1"
     compileSdk = 36
@@ -18,7 +26,8 @@ android {
     defaultConfig {
         applicationId = "de.myhornets.rise1"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = zielSdkStand
+        buildConfigField("int", "ZIEL_SDK", "$zielSdkStand")
         versionCode = 5
         // Die EINZIGE Stelle, an der der Stand steht. Die Statusansicht liest
         // ihn über BuildConfig — damit können Anzeige und Build nicht mehr
