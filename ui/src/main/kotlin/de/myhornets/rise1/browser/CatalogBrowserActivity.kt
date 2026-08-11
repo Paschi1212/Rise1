@@ -55,7 +55,7 @@ import de.myhornets.rise1.catalog.CatalogMetaEntity
 import de.myhornets.rise1.catalog.CatalogRole
 import de.myhornets.rise1.catalog.IdentityEntity
 import de.myhornets.rise1.catalog.RulesTextParser
-import de.myhornets.rise1.prototyp.PrototypActivity
+import de.myhornets.rise1.sitzung.TischActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -173,7 +173,7 @@ internal fun KatalogApp() {
                         TextButton(
                             onClick = {
                                 context.startActivity(
-                                    Intent(context, PrototypActivity::class.java),
+                                    Intent(context, TischActivity::class.java),
                                 )
                             },
                         ) { Text("Partie") }

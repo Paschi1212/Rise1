@@ -123,5 +123,14 @@ object RiseStore {
      * Aus demselben Grund wie [eventLog] kein weiteres DAO: Eine Ablösung ist
      * zwei Schreibvorgänge, die zusammen gehören oder gar nicht.
      */
+    /**
+     * Der erste Schritt jeder Partie: das eigene Gerät anmelden.
+     *
+     * `match.host_device_uid` und `participant_session.device_uid` zeigen beide
+     * auf `device`. Wer eine Partie anlegt, ohne diesen Elternsatz zu haben,
+     * bekommt `FOREIGN KEY constraint failed (787)` — und zwar zu Recht.
+     */
+    fun geraete(datenbank: RiseDatabase): Geraeteanmeldung = Geraeteanmeldung(datenbank)
+
     fun sitzungen(datenbank: RiseDatabase): Sitzungsverwaltung = Sitzungsverwaltung(datenbank)
 }

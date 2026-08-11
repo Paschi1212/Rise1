@@ -120,6 +120,7 @@ class Sitzungslaufzeit(
         try {
             neuerTransport = bausatz.transport(neuerThread)
             val neueVerbindung = bausatz.verbindung(neuerTransport)
+            val gebauterTransport = neuerTransport
 
             sitzungsthread = neuerThread
             transport = neuerTransport
@@ -127,8 +128,12 @@ class Sitzungslaufzeit(
             zustandIntern = Zustand.LAEUFT
             startzahl++
 
-            // Erst ab hier wird gesprochen — und zwar dort, wo es hingehört.
-            neuerThread.fuehreAus { neueVerbindung.starte() }
+            // Erst ab hier wird gesprochen — und zwar dort, wo es hingehört
+            // (ADR-008: alles oberhalb von `Transport` auf dem Sitzungsthread).
+            neuerThread.fuehreAus {
+                neueVerbindung?.starte()
+                bausatz.nachStart(gebauterTransport, neuerThread)
+            }
             RiseLog.i(PROTOKOLLMARKE, "Sitzung aufgebaut (Start $startzahl).")
             return true
         } catch (fehler: Throwable) {
@@ -201,6 +206,24 @@ class Sitzungslaufzeit(
     }
 
     /**
+     * Irgendetwas auf dem Sitzungsthread ausführen.
+     *
+     * Für alles, was **nicht** die [Sitzungsverbindung] ist — auf dem Host ist
+     * das der `Tischdienst`, auf dem Gast der `Beitrittsablauf`. Die Regel
+     * bleibt dieselbe: Wer Sitzungszustand anfasst, tut es hier oder gar nicht.
+     *
+     * @return `false`, wenn gerade keine Sitzung läuft.
+     */
+    fun fuehreAus(aufgabe: () -> Unit): Boolean {
+        val thread = synchronized(schloss) {
+            if (zustandIntern != Zustand.LAEUFT) return false
+            sitzungsthread
+        } ?: return false
+        thread.fuehreAus(aufgabe)
+        return true
+    }
+
+    /**
      * Wartet, bis der Sitzungsthread alles Eingereichte abgearbeitet hat.
      *
      * Für den Dienst nicht nötig, für Tests unentbehrlich: Sie ersetzt die
@@ -245,6 +268,22 @@ interface Sitzungsbausatz {
      * Die Sitzungsverbindung über diesem Transport.
      *
      * Wird **nicht** gestartet: Das tut die Laufzeit, auf dem Sitzungsthread.
+     *
+     * `null` ist erlaubt und ist der Fall des **Hosts**: Er baut zu niemandem
+     * eine Verbindung auf, hat keinen Herzschlag zu senden und nichts
+     * wiederzuverbinden — `Sitzungsverbindung` ist die Klasse des Gasts
+     * (T-073/T-074). Ihm eine zu geben, die auf ihn selbst zeigt, wäre eine
+     * Attrappe im Auslieferungsstand.
      */
-    fun verbindung(transport: Transport): Sitzungsverbindung
+    fun verbindung(transport: Transport): Sitzungsverbindung?
+
+    /**
+     * Was nach dem Aufbau noch zu tun ist — **auf dem Sitzungsthread**.
+     *
+     * Hier hängen sich `Tischdienst` (Host) und `Beitrittsablauf` (Gast) an den
+     * Transport. Es geschieht nicht in [transport], weil das im aufrufenden
+     * Thread liefe: Ein `beobachte` ist Anmeldung, aber ein `verbinde` gleich
+     * dahinter wäre bereits Sitzungsarbeit auf dem falschen Thread (ADR-008).
+     */
+    fun nachStart(transport: Transport, sitzung: Sitzungsthread) {}
 }

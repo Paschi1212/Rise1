@@ -190,6 +190,11 @@ class NsdDienstverzeichnis(
             // nicht die eigene Suche zum Absturz bringen.
             merkmale = merkmale
                 .filterKeys { it != MERKMAL_UID && it.lowercase() !in Dienst.VERBOTENE_MERKMALE },
+            // Erst die Auflösung kennt sie, und ohne sie führt der Port
+            // nirgendwohin. `hostAddresses` gibt es seit API 34; darunter
+            // bleibt `host` der Weg. Beides kann leer sein — dann ist der
+            // Dienst da, aber nicht erreichbar.
+            adresse = @Suppress("DEPRECATION") info.host?.hostAddress,
         )
     }
 

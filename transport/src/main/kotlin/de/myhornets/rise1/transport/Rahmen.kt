@@ -67,6 +67,38 @@ enum class Rahmentyp(val kennung: Byte) {
      * unterscheiden. Einzelne Ereignisrahmen hätten diese Klammer nicht.
      */
     DELTA(7),
+
+    /**
+     * Das Beitrittsgesuch eines neuen Geräts — TDD 9.3, `T-101`.
+     *
+     * ## Warum ein eigener Typ neben [HANDSHAKE]
+     *
+     * Weil es eine andere Nachricht ist. Ein **Wiedereinstieg** weist sich mit
+     * einem `rejoin_token` aus, den es schon hat; ein **Beitritt** hat noch
+     * keinen und bittet um einen Sitzplatz. Beides in [HANDSHAKE] zu legen
+     * verlangte ein Unterscheidungsbyte in der Nutzlast — und damit einen
+     * Leser, der erst hineinschaut, um zu wissen, was er liest.
+     *
+     * Es ist dieselbe Begründung, mit der [DELTA] entstanden ist
+     * ([[ADR-007 Nutzlastformat der Sitzungsrahmen]]), und derselbe Preis:
+     * eine Kennung mehr, die sich nie wieder verschieben darf. Ältere Geräte
+     * überspringen sie sauber — dafür gibt es [UnbekannterRahmen].
+     */
+    BEITRITT(8),
+
+    /** Der Host nimmt auf: Sitzplatz, `participant_uid`, `rejoin_token`. */
+    BEITRITT_ANTWORT(9),
+
+    /**
+     * Der Host nimmt **nicht** auf.
+     *
+     * Eigener Typ und kein Flag in [BEITRITT_ANTWORT] — dieselbe Regel wie bei
+     * [ABLEHNUNG]: *„Eine Ablehnung ist keine Antwort mit einem Flag darin: Wer
+     * sie als solche liest, kann sie übersehen."* Und ein eigener Typ neben
+     * [ABLEHNUNG], weil die Gründe verschieden sind: Ein Tisch ist voll, ein
+     * Wiedereinstieg scheitert am Nachweis.
+     */
+    BEITRITT_ABLEHNUNG(10),
     ;
 
     companion object {

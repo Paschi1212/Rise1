@@ -48,6 +48,20 @@ data class Dienst(
      * das nie beitritt.
      */
     val merkmale: Map<String, String> = emptyMap(),
+
+    /**
+     * Wo dieser Dienst zu erreichen ist — vom **Auflöser** gefüllt, nicht aus
+     * der Ankündigung gelesen.
+     *
+     * Ohne sie ist ein gefundener Dienst nutzlos: Ein Port ohne Adresse führt
+     * nirgendwohin. Sie steht getrennt von [merkmale], weil sie kein TXT-Eintrag
+     * ist, den irgendjemand setzen könnte, sondern das Ergebnis der Auflösung.
+     *
+     * `null` bei einer Attrappe oder solange nicht aufgelöst wurde. Auch eine
+     * aufgelöste Adresse ist **unbeglaubigt** — geprüft wird der Host über
+     * seinen Fingerabdruck (ADR-001, ADR-002A 3.2), nicht über seine IP.
+     */
+    val adresse: String? = null,
 ) {
     init {
         require(port in 1..65_535) { "Kein gültiger Port: $port." }

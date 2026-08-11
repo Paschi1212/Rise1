@@ -132,6 +132,7 @@ class Sitzungsdienst : Service() {
             return START_NOT_STICKY
         }
         laufzeit = neu
+        Sitzungswerk.merke(neu)
         return START_NOT_STICKY
     }
 
@@ -157,6 +158,7 @@ class Sitzungsdienst : Service() {
     override fun onDestroy() {
         laufzeit?.beende()
         laufzeit = null
+        Sitzungswerk.merke(null)
         super.onDestroy()
     }
 
@@ -257,11 +259,31 @@ object Sitzungswerk {
     var bausatz: Sitzungsbausatz? = null
         private set
 
+    /**
+     * Die laufende Sitzung — vom Dienst hinterlegt, von der Oberfläche gelesen.
+     *
+     * Damit kommt ein `ViewModel` an den Stand, ohne sich an den Dienst zu
+     * binden. Der **Besitzer bleibt der Dienst**: Er baut sie, er beendet sie,
+     * und er trägt sie hier aus, wenn er endet. Wer sie hier liest, liest ein
+     * Abbild und niemals einen Besitzanspruch.
+     *
+     * Befristet wie [bausatz]: Mit `T-101` trägt der Intent die Angaben, und
+     * eine Bindung ist dann der sauberere Weg.
+     */
+    @Volatile
+    var laufzeit: Sitzungslaufzeit? = null
+        private set
+
     fun ruesteAus(bausatz: Sitzungsbausatz) {
         this.bausatz = bausatz
     }
 
+    fun merke(laufzeit: Sitzungslaufzeit?) {
+        this.laufzeit = laufzeit
+    }
+
     fun raeumeAb() {
         bausatz = null
+        laufzeit = null
     }
 }

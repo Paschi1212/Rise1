@@ -8,6 +8,7 @@ import de.myhornets.rise1.session.Sitzplatzzustand
 import de.myhornets.rise1.session.Tischnachschlag
 import de.myhornets.rise1.store.MatchEntity
 import de.myhornets.rise1.store.MatchParticipantEntity
+import de.myhornets.rise1.store.Geraeteanmeldung
 import de.myhornets.rise1.store.MatchEventLog
 import de.myhornets.rise1.store.RiseDatabase
 import de.myhornets.rise1.store.Sitzungsverwaltung
@@ -146,6 +147,16 @@ class RaumTischnachschlag(
                 deletedAt = null,
                 originDeviceUid = kontext.hostDeviceUid,
             ),
+        )
+
+        // `participant_session.device_uid` zeigt auf `device`. Das Gerät des
+        // Gasts kennt diese Datenbank noch nicht — ohne diese Zeile scheitert
+        // die Sitzungseröffnung mit demselben FOREIGN KEY 787 wie die
+        // Partieanlage ohne eigenes Gerät. Erst das Gerät, dann die Sitzung.
+        Geraeteanmeldung(datenbank, uhr).merkeFremdes(
+            deviceUid = deviceUid,
+            anzeigename = anzeigename,
+            durchGeraeteUid = kontext.hostDeviceUid,
         )
 
         sitzungen.eroeffne(

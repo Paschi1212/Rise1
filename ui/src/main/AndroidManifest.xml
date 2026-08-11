@@ -47,8 +47,15 @@
             ersetzt; bis dahin ist der Tausch durch genau diesen Block
             umkehrbar.
         -->
+        <!--
+            Der Tisch ist der Einstieg. Bis hierher startete der
+            Katalog-Browser (T-017); er bleibt vollstaendig erhalten und ist
+            ueber die Kopfzeile des Tisches erreichbar — genau wie zuvor die
+            Statusseite aus T-005. Ein Spiel beginnt am Tisch, nicht in der
+            Kartenliste. Der Tausch ist durch diesen Block umkehrbar.
+        -->
         <activity
-            android:name=".browser.CatalogBrowserActivity"
+            android:name=".sitzung.TischActivity"
             android:exported="true"
             android:label="Rise 1.0">
             <intent-filter>
@@ -56,6 +63,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".browser.CatalogBrowserActivity"
+            android:exported="false"
+            android:label="Rise 1.0 — Katalog" />
 
         <!--
             ADR-004 — der lokale Prototyp-Modus. Befristet: Dieser Block

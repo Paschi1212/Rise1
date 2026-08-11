@@ -83,6 +83,9 @@ dependencies {
     // ADR-005 — MVVM mit StateFlow. Siehe Begründung im Versionskatalog.
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     debugImplementation(libs.compose.ui.tooling)
+    // Der Testmanifest-Eintrag, ohne den `createAndroidComposeRule` keine
+    // Activity starten kann. Nur im Debug-Build, nicht in der Release-APK.
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(project(":core"))
     implementation(project(":projection"))
@@ -100,6 +103,9 @@ dependencies {
     // S2. Der Prototyp schreibt und liest jetzt über Room und das Event-Log —
     // das lässt sich nur auf einem Gerät prüfen. Landet nicht in der APK.
     androidTestImplementation(libs.junit4)
+    // Compose-Gerätetests. Die BOM legt auch hier die Version fest.
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)

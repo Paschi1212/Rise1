@@ -141,6 +141,125 @@ object Sitzungsprotokoll {
         )
     }
 
+    // ── Beitritt (TDD 9.3, T-101) ───────────────────────────────────────────
+
+    /**
+     * Das Gesuch eines Geräts, das noch keinen Sitzplatz hat.
+     *
+     * Anders als beim Wiedereinstieg steht hier **kein Geheimnis** drin: Der
+     * `rejoin_token` entsteht erst durch die Antwort. Ein Beitritt weist nichts
+     * nach — wer am Tisch sitzt, entscheidet der Host (`Beitrittsstelle`), und
+     * dass es der richtige Host ist, hat der Gast schon vor dem ersten Byte
+     * geprüft: über den Fingerabdruck des Zertifikats (ADR-001, ADR-006).
+     */
+    fun kodiere(gesuch: Beitrittsgesuch): Rahmen {
+        val s = Schreiber()
+        s.text(gesuch.matchUid)
+        s.text(gesuch.deviceUid)
+        s.text(gesuch.anzeigename)
+        s.zahlOderNichts(gesuch.wunschplatz?.toLong())
+        return Rahmen(Rahmentyp.BEITRITT, s.fertig())
+    }
+
+    fun liesBeitrittsgesuch(rahmen: Rahmen): Beitrittsgesuch {
+        erwarte(rahmen, Rahmentyp.BEITRITT)
+        val l = Leser(rahmen.nutzlast)
+        val matchUid = l.text("match_uid")
+        val deviceUid = l.text("device_uid")
+        val anzeigename = l.text("display_name")
+        val wunschplatz = l.zahlOderNichts("seat_index")
+        l.mussLeerSein()
+
+        if (wunschplatz != null && (wunschplatz < 0 || wunschplatz > MAX_SITZPLAETZE)) {
+            // Die Länge kam vom Gegenüber, die Zahl auch. Ein Wunschplatz von
+            // drei Milliarden ist kein Wunsch.
+            throw Protokollfehler(
+                "Feld `seat_index` liegt außerhalb von 0..$MAX_SITZPLAETZE.",
+            )
+        }
+        return try {
+            Beitrittsgesuch(
+                matchUid = matchUid,
+                deviceUid = deviceUid,
+                anzeigename = anzeigename,
+                wunschplatz = wunschplatz?.toInt(),
+            )
+        } catch (fehler: IllegalArgumentException) {
+            throw Protokollfehler("Das Beitrittsgesuch ist inhaltlich unzulässig: ${fehler.message}")
+        }
+    }
+
+    /**
+     * Die Antwort des Hosts.
+     *
+     * **Der `rejoin_token` geht genau hier einmal über die Leitung** — er muss,
+     * sonst hätte der Gast keinen Nachweis für den Wiedereinstieg (TDD 9.3).
+     * Er darf deshalb in keiner Fehlermeldung und in keinem `toString`
+     * auftauchen; dafür sorgen die Meldungen dieses Lesers, die Feldnamen und
+     * Längen nennen und nie Inhalte.
+     */
+    fun kodiere(antwort: Beitrittsantwort): Rahmen = when (antwort) {
+        is Beitrittsantwort.Angenommen -> {
+            val s = Schreiber()
+            s.text(antwort.participantUid)
+            s.anzahl(antwort.sitzplatz)
+            s.text(antwort.rejoinToken)
+            Rahmen(Rahmentyp.BEITRITT_ANTWORT, s.fertig())
+        }
+
+        is Beitrittsantwort.Abgelehnt -> {
+            val s = Schreiber()
+            s.byteWert(kennungVon(antwort.grund))
+            Rahmen(Rahmentyp.BEITRITT_ABLEHNUNG, s.fertig())
+        }
+    }
+
+    fun liesBeitrittsantwort(rahmen: Rahmen): Beitrittsantwort = when (rahmen.typ) {
+        Rahmentyp.BEITRITT_ANTWORT -> {
+            val l = Leser(rahmen.nutzlast)
+            val antwort = try {
+                Beitrittsantwort.Angenommen(
+                    participantUid = l.text("participant_uid"),
+                    sitzplatz = l.anzahl("seat_index", MAX_SITZPLAETZE),
+                    rejoinToken = l.text("rejoin_token"),
+                )
+            } catch (fehler: IllegalArgumentException) {
+                throw Protokollfehler("Die Beitrittsantwort ist inhaltlich unzulässig: ${fehler.message}")
+            }
+            l.mussLeerSein()
+            antwort
+        }
+
+        Rahmentyp.BEITRITT_ABLEHNUNG -> {
+            val l = Leser(rahmen.nutzlast)
+            val grund = beitrittsgrundVon(l.byteWert("reason"))
+            l.mussLeerSein()
+            Beitrittsantwort.Abgelehnt(grund)
+        }
+
+        else -> throw Protokollfehler(
+            "Rahmentyp ${rahmen.typ} ist keine Antwort auf ein Beitrittsgesuch.",
+        )
+    }
+
+    /** Feste Kennungen — sie stehen auf der Leitung und dürfen sich nie verschieben. */
+    internal fun kennungVon(grund: Beitrittsablehnung): Byte = when (grund) {
+        Beitrittsablehnung.PARTIE_UNBEKANNT -> 1
+        Beitrittsablehnung.PARTIE_NIMMT_NICHT_MEHR_AUF -> 2
+        Beitrittsablehnung.TISCH_VOLL -> 3
+        Beitrittsablehnung.PLATZ_BESETZT -> 4
+        Beitrittsablehnung.GERAET_SITZT_SCHON -> 5
+    }
+
+    internal fun beitrittsgrundVon(kennung: Byte): Beitrittsablehnung = when (kennung.toInt()) {
+        1 -> Beitrittsablehnung.PARTIE_UNBEKANNT
+        2 -> Beitrittsablehnung.PARTIE_NIMMT_NICHT_MEHR_AUF
+        3 -> Beitrittsablehnung.TISCH_VOLL
+        4 -> Beitrittsablehnung.PLATZ_BESETZT
+        5 -> Beitrittsablehnung.GERAET_SITZT_SCHON
+        else -> throw Protokollfehler("Unbekannte Kennung $kennung im Feld `reason` einer Beitrittsablehnung.")
+    }
+
     // ── Aufholen (TDD 9.5) ──────────────────────────────────────────────────
 
     fun kodiere(delta: Aufholung.Delta): Rahmen {
