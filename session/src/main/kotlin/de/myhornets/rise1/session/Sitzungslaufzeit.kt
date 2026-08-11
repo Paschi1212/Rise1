@@ -110,7 +110,12 @@ class Sitzungslaufzeit(
             Zustand.RUHT -> Unit
         }
 
-        val neuerThread = Sitzungsthread(threadname)
+        // `T-077`: Der Sitzungsthread verschluckt nichts. Was ein Rückruf wirft,
+        // geht hier ins Protokoll — `:transport` kann das nicht selbst, es hat
+        // keine Kante auf `:core` (TDD 2.2).
+        val neuerThread = Sitzungsthread(threadname) { fehler ->
+            RiseLog.e(PROTOKOLLMARKE, "Fehler in einem Rückruf auf dem Sitzungsthread.", fehler)
+        }
         var neuerTransport: Transport? = null
         try {
             neuerTransport = bausatz.transport(neuerThread)

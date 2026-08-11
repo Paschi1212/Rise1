@@ -112,6 +112,16 @@ class Sockettransport(
 
     /** Wie lange das Herunterfahren höchstens auf einen Thread wartet. */
     private val abschiedsfristMillis: Long = ABSCHIEDSFRIST_MILLIS,
+
+    /**
+     * Wie viele unversandte Rahmen eine Verbindung höchstens vor sich her
+     * schiebt.
+     *
+     * Einstellbar wie [sitzplaetze] und aus demselben Grund: Die Zahl selbst ist
+     * nicht heilig, ihre **Endlichkeit** schon — und ein Fehlerbild, das sich
+     * nur mit 256 Rahmen à 1 MiB herstellen lässt, wird nie geprüft (`T-077`).
+     */
+    private val sendestauGrenze: Int = SENDESTAU_GRENZE,
 ) : Transport {
 
     private val hoerer = CopyOnWriteArrayList<(TransportEreignis) -> Unit>()
@@ -138,6 +148,16 @@ class Sockettransport(
     @Volatile
     private var annahmeThread: Thread? = null
 
+    /**
+     * Ob beim letzten [schliesse] alle Threads innerhalb der Frist endeten.
+     *
+     * `T-077`: Auskunft, kein Steuerknopf. Vor dem ersten Herunterfahren `true`
+     * — es gibt nichts, was schiefgegangen sein könnte.
+     */
+    @Volatile
+    var sauberHeruntergefahren: Boolean = true
+        private set
+
     /** Eine Verbindung mit allem, was zu ihr gehört. */
     private inner class Verbindung(val nummer: Long, val gegenstelle: Gegenstelle) {
 
@@ -149,7 +169,7 @@ class Sockettransport(
          * wachsenden Speicherverbrauch — dieselbe Sorte Fehler, gegen die
          * [Rahmencodec.MAX_NUTZLAST] steht.
          */
-        val ausgang = ArrayBlockingQueue<ByteArray>(SENDESTAU_GRENZE)
+        val ausgang = ArrayBlockingQueue<ByteArray>(sendestauGrenze)
 
         /**
          * Das `AtomicBoolean` aus ADR-008.
@@ -181,17 +201,44 @@ class Sockettransport(
      * kennt genau einen Annahmethread. Zwei wären zwei Stellen, an denen die
      * Sitzplatzgrenze zu prüfen wäre.
      *
+     * ## Ein Fehlschlag wird gemeldet, nicht geworfen (`T-077`)
+     *
+     * Dass ein Gerät nicht lauschen kann, ist ein **Fehlerbild**, kein
+     * Programmfehler: ein belegter Port, eine verweigerte Berechtigung. ADR-001
+     * verlangt für genau diesen Fall eine Auskunft — *„Wird sie verweigert, kann
+     * dieses Gerät nicht hosten — ein anderes Gerät kann es."* Eine Ausnahme aus
+     * `lausche` erreichte die Oberfläche nur, wenn jemand daran denkt, sie zu
+     * fangen; das Ereignis erreicht sie über denselben Weg wie jedes andere.
+     *
      * @return der tatsächliche Port. Bei Port 0 vergibt ihn das
      *   Betriebssystem — genau das, was `T-068` danach über `NsdManager`
      *   ankündigt, und was ein Test braucht, um nicht an einem belegten Port zu
-     *   scheitern.
+     *   scheitern. **[KEIN_PORT]**, wenn nicht gelauscht werden konnte; dann
+     *   kommt zusätzlich ein [TransportEreignis.Fehlgeschlagen] ohne
+     *   Gegenstelle.
      */
     fun lausche(posten: Lauschposten): Int {
         pruefeOffen()
         check(annahmeThread == null) {
             "Es gibt genau einen Annahmethread (ADR-008). Dieser Transport nimmt bereits an."
         }
-        val server = posten.oeffne()
+        val server = try {
+            posten.oeffne()
+        } catch (fehler: Verbindungsfehler) {
+            // Die Fabrik konnte es bereits einordnen.
+            meldeSpaeter(TransportEreignis.Fehlgeschlagen(null, fehler.fehler))
+            return KEIN_PORT
+        } catch (fehler: IOException) {
+            meldeSpaeter(TransportEreignis.Fehlgeschlagen(null, deuteAufbau(fehler)))
+            return KEIN_PORT
+        } catch (fehler: SecurityException) {
+            // Der Fall aus ADR-001: Dem Gerät fehlt die Berechtigung. Er kommt
+            // als Laufzeitausnahme und nicht als `IOException` — ohne diesen
+            // Zweig risse er den aufrufenden Thread mit.
+            meldeSpaeter(TransportEreignis.Fehlgeschlagen(null, deuteAufbau(fehler)))
+            return KEIN_PORT
+        }
+
         annahmeSocket = server
         val thread = Thread({ nimmAn(server) }, ANNAHME_THREADNAME).apply { isDaemon = true }
         annahmeThread = thread
@@ -199,13 +246,36 @@ class Sockettransport(
         return server.localPort
     }
 
+    /**
+     * Der Annahmethread.
+     *
+     * ## Warum die Schleife **nicht** auf `server.isClosed` prüft (`T-077`)
+     *
+     * Weil das ein stiller Ausgang wäre: Fällt der Socket aus, während der
+     * Thread gerade zwischen zwei Runden steht, endete die Schleife über ihre
+     * Bedingung — ohne `accept`, ohne Ausnahme und ohne Meldung. Der Host nähme
+     * ab da niemanden mehr an, und niemand erführe es.
+     *
+     * Es gibt deshalb genau **einen** Ausgang: die Ausnahme aus `accept`. Nach
+     * dem Herunterfahren ist sie der vorgesehene Weg, davor ist sie ein
+     * Fehlerbild.
+     */
     private fun nimmAn(server: ServerSocket) {
-        while (!geschlossen.get() && !server.isClosed) {
+        while (!geschlossen.get()) {
             val socket = try {
                 server.accept()
-            } catch (_: IOException) {
-                // Auch das Schließen des Annahme-Sockets kommt hier heraus. Nach
-                // dem Herunterfahren ist es der vorgesehene Ausgang.
+            } catch (fehler: IOException) {
+                if (!geschlossen.get()) {
+                    meldeSpaeter(
+                        TransportEreignis.Fehlgeschlagen(
+                            null,
+                            TransportFehler.VerbindungAbgebrochen(
+                                "Der Annahmesocket ist ausgefallen: ${fehler.javaClass.simpleName}. " +
+                                    "Dieses Gerät nimmt keine weiteren Verbindungen an.",
+                            ),
+                        ),
+                    )
+                }
                 return
             }
             if (geschlossen.get()) {
@@ -275,7 +345,7 @@ class Sockettransport(
         if (!verbindung.ausgang.offer(rahmen.copyOf())) {
             beende(
                 verbindung,
-                "Sendestau: mehr als $SENDESTAU_GRENZE unversandte Rahmen. Eine Gegenstelle, " +
+                "Sendestau: mehr als $sendestauGrenze unversandte Rahmen. Eine Gegenstelle, " +
                     "die so viel nicht abnimmt, ist praktisch weg.",
             )
             return false
@@ -310,8 +380,15 @@ class Sockettransport(
         alle.forEach { beende(it, "Der Transport wird heruntergefahren.") }
 
         val frist = System.currentTimeMillis() + abschiedsfristMillis
-        (listOfNotNull(annahmeThread) + alle.flatMap { listOfNotNull(it.leseThread, it.sendeThread) })
-            .forEach { warteAuf(it, frist) }
+        val threads = listOfNotNull(annahmeThread) +
+            alle.flatMap { listOfNotNull(it.leseThread, it.sendeThread) }
+        threads.forEach { warteAuf(it, frist) }
+
+        // `T-077`: Ein Herunterfahren, bei dem ein Thread die Frist überzieht,
+        // ist kein sauberes. Es wird nicht geworfen — der Aufrufer fährt gerade
+        // herunter, und eine Ausnahme hier ließe den Rest liegen. Es wird
+        // vermerkt, damit ein Test und eine Fehlersuche es finden.
+        sauberHeruntergefahren = threads.none { it !== Thread.currentThread() && it.isAlive }
 
         // Die schon eingereichten Rückrufe — insbesondere die letzten
         // `Getrennt` — laufen noch, bevor die Hörer verschwinden. Vom
@@ -384,7 +461,24 @@ class Sockettransport(
         starteSendethread(verbindung, socket)
         meldeSpaeter(TransportEreignis.Verbunden(verbindung.gegenstelle))
 
-        leseSchleife(verbindung, socket)
+        // `T-077` — das Sicherungsnetz. Ein unerwarteter Fehler in der
+        // Leseschleife darf keine Verbindung zurücklassen, die im Verzeichnis
+        // steht, deren Thread aber tot ist: Sie meldete nie ein `Getrennt`, und
+        // ein `verbinde` auf dieselbe Gegenstelle liefe ins Leere.
+        //
+        // Das `finally` deckt zugleich den regulären Ausgang ab; `beende` ist
+        // ohne Wirkung, wenn das `AtomicBoolean` schon umgelegt ist. Genau ein
+        // `Getrennt` bleibt genau ein `Getrennt`.
+        try {
+            leseSchleife(verbindung, socket)
+        } catch (fehler: Throwable) {
+            beende(verbindung, "Unerwarteter Fehler im Lesethread: ${fehler.javaClass.simpleName}")
+            // Nicht verschluckt: Ein Programmfehler gehört laut in den
+            // Standardfehlerkanal des Threads, nicht in eine stille Statistik.
+            throw fehler
+        } finally {
+            beende(verbindung, "Der Lesethread ist beendet.")
+        }
     }
 
     private fun leseSchleife(verbindung: Verbindung, socket: Socket) {
@@ -438,31 +532,46 @@ class Sockettransport(
 
     private fun starteSendethread(verbindung: Verbindung, socket: Socket) {
         val thread = Thread({
-            val aus = try {
-                socket.getOutputStream()
-            } catch (fehler: IOException) {
-                beende(verbindung, "Kein Ausgangsstrom: ${fehler.javaClass.simpleName}")
-                return@Thread
-            }
-            while (true) {
-                val bytes = try {
-                    verbindung.ausgang.take()
-                } catch (_: InterruptedException) {
-                    // Das Zeichen zum Aufhören. Es kommt aus [beende].
-                    return@Thread
-                }
-                try {
-                    aus.write(bytes)
-                    aus.flush()
-                } catch (fehler: IOException) {
-                    beende(verbindung, "Senden gescheitert: ${fehler.javaClass.simpleName}")
-                    return@Thread
-                }
+            // `T-077`: dasselbe Sicherungsnetz wie beim Lesethread. Ein
+            // Sendethread, der still stirbt, hinterließe eine Verbindung, die
+            // Rahmen annimmt und nie eine schickt.
+            try {
+                sendeSchleife(verbindung, socket)
+            } catch (fehler: Throwable) {
+                beende(verbindung, "Unerwarteter Fehler im Sendethread: ${fehler.javaClass.simpleName}")
+                throw fehler
             }
         }, SENDER_PRAEFIX + verbindung.nummer).apply { isDaemon = true }
 
         verbindung.sendeThread = thread
         thread.start()
+    }
+
+    private fun sendeSchleife(verbindung: Verbindung, socket: Socket) {
+        val aus = try {
+            socket.getOutputStream()
+        } catch (fehler: IOException) {
+            beende(verbindung, "Kein Ausgangsstrom: ${fehler.javaClass.simpleName}")
+            return
+        }
+        while (true) {
+            val bytes = try {
+                verbindung.ausgang.take()
+            } catch (_: InterruptedException) {
+                // Das Zeichen zum Aufhören. Es kommt aus [beende].
+                return
+            }
+            try {
+                aus.write(bytes)
+                aus.flush()
+            } catch (fehler: IOException) {
+                // Die Gegenstelle ist während des Sendens verschwunden. Genau
+                // ein `Getrennt` — das AtomicBoolean entscheidet, ob es dieser
+                // Thread meldet oder der Lesethread, der es gleichzeitig merkt.
+                beende(verbindung, "Senden gescheitert: ${fehler.javaClass.simpleName}")
+                return
+            }
+        }
     }
 
     /**
@@ -562,6 +671,35 @@ class Sockettransport(
         else -> TransportFehler.VerbindungAbgebrochen(fehler.javaClass.simpleName)
     }
 
+    /**
+     * Warum dieses Gerät nicht lauschen kann (`T-077`).
+     *
+     * ## Warum [TransportFehler.Abgelehnt] und kein neuer Fall
+     *
+     * Weil es hier **keine Gegenstelle** gibt: Das Ereignis ist ein
+     * `Fehlgeschlagen(gegenstelle = null, …)`, und in dieser Klasse bedeutet
+     * genau diese Kombination bereits „abgelehnt, ohne dass jemand am anderen
+     * Ende beteiligt war" — dieselbe Form wie bei der Sitzplatzgrenze.
+     *
+     * Ein eigener Fall wäre klarer und würde `TransportFehler` erweitern, also
+     * den Vertrag aus `T-065` ändern. Das ist eine Entscheidung und keine
+     * Nebenbei-Änderung; sie ist im Bericht zu `T-077` als offener Punkt
+     * vermerkt. Bis dahin geht **keine Auskunft verloren**: Der Grund nennt den
+     * Ausnahmetyp, und `SecurityException` ist der Fall, den ADR-001 meint —
+     * *„Wird sie verweigert, kann dieses Gerät nicht hosten."*
+     */
+    private fun deuteAufbau(fehler: Throwable): TransportFehler = when (fehler) {
+        is SecurityException -> TransportFehler.Abgelehnt(
+            "Diesem Gerät fehlt die Berechtigung, Verbindungen anzunehmen. Es kann keine " +
+                "Partie eröffnen — ein anderes Gerät am Tisch kann es (ADR-001).",
+        )
+
+        else -> TransportFehler.Abgelehnt(
+            "Dieses Gerät kann nicht lauschen: ${fehler.javaClass.simpleName}. " +
+                "Es kann keine Partie eröffnen — ein anderes Gerät am Tisch kann es.",
+        )
+    }
+
     companion object {
 
         /** Acht Spieler, also sieben Gäste plus Reserve — TDD 6.1, ADR-008. */
@@ -587,6 +725,14 @@ class Sockettransport(
 
         /** Präfix der Kennung einer noch nicht durch den Handshake benannten Gegenstelle. */
         const val VORLAEUFIG = "vorlaeufig:"
+
+        /**
+         * Was [lausche] zurückgibt, wenn nicht gelauscht werden konnte.
+         *
+         * `-1` und nicht `0`: Null ist ein gültiger Wunschport („vergib einen
+         * freien"), und ein Fehlschlag darf nicht wie ein Erfolg aussehen.
+         */
+        const val KEIN_PORT = -1
     }
 }
 

@@ -36,10 +36,20 @@ import java.util.concurrent.atomic.AtomicInteger
 internal class KlartextSocketquelle(
     private val port: Int,
     private val zeitlimitMillis: Int = 2_000,
+    /**
+     * Ein kleiner Sendepuffer — für `T-077`.
+     *
+     * Der Sendestau lässt sich nur zeigen, wenn das Schreiben auf dem Socket
+     * wirklich blockiert. Auf der Schleife puffert das Betriebssystem sonst so
+     * großzügig, dass die Warteschlange nie volläuft — und ein Fehlerbild, das
+     * sich nicht herstellen lässt, wird nicht geprüft.
+     */
+    private val sendepufferBytes: Int? = null,
 ) : Socketquelle {
 
     override fun verbinde(gegenstelle: Gegenstelle): Socket {
         val socket = Socket()
+        sendepufferBytes?.let { socket.sendBufferSize = it }
         socket.connect(InetSocketAddress(InetAddress.getLoopbackAddress(), port), zeitlimitMillis)
         return socket
     }

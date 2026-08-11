@@ -49,7 +49,23 @@ import java.util.concurrent.TimeUnit
  * zählt diese Klasse mit und hebt den letzten Fehler auf, damit ein Test und
  * eine spätere Fehlersuche ihn finden.
  */
-class Sitzungsthread(name: String = STANDARDNAME) : AutoCloseable {
+class Sitzungsthread(
+    name: String = STANDARDNAME,
+    /**
+     * Was mit einem Fehler aus einem Rückruf geschieht (`T-077`).
+     *
+     * `:transport` hat keine Kante auf `:core` und deshalb keinen `RiseLog`
+     * (TDD 2.2). Ohne diesen Haken bliebe ein Fehler in [letzterFehler] liegen
+     * und niemand sähe ihn — genau das „stille Verschlucken", das T-077
+     * ausschließt. Wer den Sitzungsthread baut, reicht hier die
+     * Protokollierung herein; `Sitzungslaufzeit` in `:session` tut das.
+     *
+     * Der Haken läuft **auf dem Sitzungsthread** und darf selbst scheitern:
+     * Eine Ausnahme aus ihm wird gefangen, sonst wäre die Fehlerbehandlung die
+     * neue Fehlerquelle.
+     */
+    private val fehlerbehandler: (Throwable) -> Unit = {},
+) : AutoCloseable {
 
     private val warteschlange = LinkedBlockingQueue<Runnable>()
 
@@ -110,6 +126,13 @@ class Sitzungsthread(name: String = STANDARDNAME) : AutoCloseable {
                 } catch (fehler: Throwable) {
                     letzterFehler = fehler
                     fehlerzahl++
+                    try {
+                        fehlerbehandler(fehler)
+                    } catch (_: Throwable) {
+                        // Ein Fehler in der Fehlerbehandlung beendet diesen
+                        // Thread nicht. Er wäre sonst die einzige Ausnahme, die
+                        // genau das tut, wovor sie schützen soll.
+                    }
                 }
             }
         } catch (_: RejectedExecutionException) {

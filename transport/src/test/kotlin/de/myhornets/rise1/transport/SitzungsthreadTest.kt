@@ -110,6 +110,41 @@ class SitzungsthreadTest {
     }
 
     @Test
+    fun jederRueckruffehlerGehtAnDenFehlerbehandler() {
+        // T-077: Ein Fehler, der nur in `letzterFehler` liegt, ist ein
+        // verschluckter Fehler. `:transport` hat keinen RiseLog — deshalb
+        // dieser Haken.
+        val gesehene = Collections.synchronizedList(mutableListOf<Throwable>())
+        val sitzung = Sitzungsthread(Sitzungsthread.STANDARDNAME) { gesehene += it }.also { offene += it }
+
+        sitzung.fuehreAus { throw IllegalArgumentException("erster") }
+        sitzung.fuehreAus { throw IllegalStateException("zweiter") }
+        sitzung.fuehreAus { }
+
+        assertTrue(sitzung.warteAufLeerlauf(5_000))
+        assertEquals(2, gesehene.size)
+        assertEquals(2, sitzung.fehlerzahl)
+        assertEquals(listOf("erster", "zweiter"), gesehene.map { it.message })
+    }
+
+    @Test
+    fun einStolpernderFehlerbehandlerReisstDenThreadNichtMit() {
+        // Die Fehlerbehandlung darf nicht die neue Fehlerquelle sein.
+        val sitzung = Sitzungsthread(Sitzungsthread.STANDARDNAME) {
+            throw IllegalStateException("Auch der Behandler stolpert.")
+        }.also { offene += it }
+        val namen = Collections.synchronizedSet(mutableSetOf<String>())
+
+        sitzung.fuehreAus { namen += Thread.currentThread().name }
+        sitzung.fuehreAus { throw IllegalArgumentException("Absicht") }
+        sitzung.fuehreAus { namen += Thread.currentThread().name }
+
+        assertTrue(sitzung.warteAufLeerlauf(5_000))
+        assertEquals(1, namen.size, "Nach dem Doppelfehler lief die nächste Aufgabe auf einem anderen Thread.")
+        assertEquals(1, sitzung.fehlerzahl)
+    }
+
+    @Test
     fun nachDemBeendenWirdNichtsMehrAngenommenUndNichtsGeworfen() {
         val sitzung = sitzungsthread()
         val gelaufen = Collections.synchronizedList(mutableListOf<String>())
