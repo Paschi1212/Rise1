@@ -11,6 +11,10 @@ android {
 
     defaultConfig {
         minSdk = 29
+        // Der TLS-Handshake mit einem echten Partie-Zertifikat ist nur auf einem
+        // Gerät prüfbar (ADR-006/ADR-008) — dafür braucht dieses Modul erstmals
+        // einen Runner.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -38,4 +42,11 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
+
+    // Nur androidTest — landet nicht in der APK. Dieselben Koordinaten wie in
+    // :catalog, :store und :ui; keine neue Version.
+    androidTestImplementation(libs.junit4)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

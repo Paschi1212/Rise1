@@ -92,7 +92,17 @@ class AndroidKeyStoreZertifikat private constructor(
         private const val TLS_FASSUNG = "TLSv1.2"
         private const val GUELTIG_TAGE = 30
 
-        /** Der Alias trägt die Partie — siehe „Ein Zertifikat je Partie". */
+        /**
+         * Der Alias trägt die Partie — siehe „Ein Zertifikat je Partie".
+         *
+         * **Ohne Fassungsnummer, und das ist geprüft.** Als die Digest-Liste
+         * erweitert wurde, stand die Frage, ob ein `-v2-` nötig sei, um alte
+         * Schlüssel mit der engeren Autorisierung auszuschließen. Sie ist es
+         * nicht: `match_uid` ist je Partie neu, also gibt es für einen neuen
+         * Tisch nie einen alten Schlüssel. Eine Fassungsnummer wäre eine
+         * Änderung aus Vorsicht ohne Fall dahinter — und ein zweiter Grund,
+         * warum ein Alias so aussieht, wie er aussieht.
+         */
         fun alias(matchUid: String): String = "rise1-host-$matchUid"
 
         /**
@@ -125,7 +135,29 @@ class AndroidKeyStoreZertifikat private constructor(
                 // einem Telefon zählt beides. D-002 hat für die Nutzdaten
                 // ohnehin moderne Verfahren gewählt.
                 .setAlgorithmParameterSpec(java.security.spec.ECGenParameterSpec("secp256r1"))
-                .setDigests(KeyProperties.DIGEST_SHA256)
+                // Die Autorisierung des Schlüssels, nicht die Stärke der
+                // Signatur — und sie muss breiter sein als der eine Digest, mit
+                // dem das Zertifikat signiert wird.
+                //
+                // Conscrypt bildet den Hash beim TLS-Handshake **selbst** und
+                // bittet den Keystore, den fertigen Digest zu signieren; das ist
+                // `NONEwithECDSA` und verlangt `DIGEST_NONE`. Außerdem darf die
+                // ausgehandelte `signature_algorithms`-Erweiterung SHA-384 oder
+                // SHA-512 ergeben. Ein Schlüssel, der nur SHA-256 autorisiert,
+                // weist beides ab — der Keymaster antwortet mit
+                // `INCOMPATIBLE_DIGEST` (13 / -13), und der Handshake bricht auf
+                // der Serverseite ab, bevor ein Byte fließt.
+                //
+                // `DIGEST_NONE` heißt **nicht**, dass ohne Hash signiert wird:
+                // Der Hash entsteht in Conscrypt statt im TEE. Der private
+                // Schlüssel verlässt den AndroidKeyStore weiterhin nie, und an
+                // der Fingerabdruckprüfung ändert sich nichts.
+                .setDigests(
+                    KeyProperties.DIGEST_NONE,
+                    KeyProperties.DIGEST_SHA256,
+                    KeyProperties.DIGEST_SHA384,
+                    KeyProperties.DIGEST_SHA512,
+                )
                 // Der Betreff ist bedeutungslos: Niemand prüft ihn. Geprüft wird
                 // der Fingerabdruck (ADR-001, ADR-006). Er steht trotzdem drin,
                 // weil ein Zertifikat einen braucht.
